@@ -34,7 +34,7 @@ int main() {
   assert(!valid({block(3, 0, 2, 2)}, 4, 3));
   assert(!valid({block(0, 0, 2, 2), block(1, 1, 2, 1)}, 4, 3));
   assert(!valid({block(0, 0, 1, 1, "")}, 4, 3));
-  std::vector<Section> many(MAX + 1, block(0, 0, 1, 1));
+  roomy::List<Section> many(MAX + 1, block(0, 0, 1, 1));
   assert(!valid(many, 8, 8));
   return 0;
 }

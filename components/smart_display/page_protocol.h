@@ -88,7 +88,7 @@ struct Page {
   uint32_t icon = 0;
 #ifdef SD_MOD_SECTIONS
   // Its sections (module sections, docs/PAGES.md "Sections"): blocks of its cells with a title and a panel.
-  std::vector<section_layout::Section> sections;
+  roomy::List<section_layout::Section> sections;
 #endif
 };
 

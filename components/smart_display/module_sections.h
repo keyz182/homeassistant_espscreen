@@ -42,14 +42,14 @@ static_assert(sizeof(section_layout::Section) + sizeof(Drawn) + 2 * (4 * ((secti
                   tile_catalogue::SECTION_BYTES,
               "a section keeps more inside the chip than its price (catalogue/_tile.yaml memory.section)");
 #endif
-inline std::array<std::vector<Drawn>, page_protocol::MAX_PAGES> drawn{};
+inline std::array<roomy::List<Drawn>, page_protocol::MAX_PAGES> drawn{};
 // What each page's decorations were made from (signature): a page placed before its sections arrived, or placed again
 // after a layout changed them, makes them anew.
 inline std::array<uint32_t, page_protocol::MAX_PAGES> made{};
 inline int shown = -1;
 
-inline const std::vector<section_layout::Section> &of(int page) {
-  static const std::vector<section_layout::Section> none;
+inline const roomy::List<section_layout::Section> &of(int page) {
+  static const roomy::List<section_layout::Section> none;
   return page >= 0 && size_t(page) < model.page_data.records.size() ? model.page_data.records[page].sections : none;
 }
 // The blocks, titles, icons and contrast of a page, folded into one number (FNV-1a); 0 never stands for any.
@@ -137,9 +137,9 @@ inline void place(Widgets &w, int page, int32_t column, int32_t span_x, int32_t 
 }
 
 // ---- The decorations ----
-inline lv_obj_t *text(const std::string &value, const lv_font_t *font) {
+inline lv_obj_t *text(const char *value, const lv_font_t *font) {
   auto *l = lv_label_create(tile_grid);
-  lv_label_set_text(l, value.c_str());
+  lv_label_set_text(l, value);
   lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
   if (font) lv_obj_set_style_text_font(l, font, 0);
   lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
@@ -209,13 +209,13 @@ inline void make(int page) {
       lv_obj_set_grid_cell(d.icon, LV_GRID_ALIGN_START, s.column, s.columns, LV_GRID_ALIGN_START, s.row, 1);
       x += g.box_w + ui::px(7);
     }
-    d.title = text(s.title, label_font);
+    d.title = text(s.title.c_str(), label_font);
     lv_obj_set_style_margin_left(d.title, x, 0);
     lv_obj_set_style_margin_top(d.title, top, 0);
     lv_obj_set_grid_cell(d.title, LV_GRID_ALIGN_STRETCH, s.column, s.columns, LV_GRID_ALIGN_START, s.row, 1);
     // The summary on the title's line (its baseline on the title's), at the right end.
     if (small_font) {
-      d.summary = text(s.summary, small_font);
+      d.summary = text(s.summary.c_str(), small_font);
       lv_label_set_long_mode(d.summary, LV_LABEL_LONG_MODE_CLIP);
       lv_obj_set_style_margin_right(d.summary, inset(), 0);
       lv_obj_set_style_margin_top(d.summary, top + ascent(label_font) - ascent(small_font), 0);

@@ -66,7 +66,9 @@ What a tile costs comes from the tile catalogue, the one place every type is des
 A **section** (docs/PAGES.md "Sections", the boards of the full tier) costs 224 bytes inside the chip, on a screen that
 draws sections: its place in the page's list (`section_layout::Section`, 60 bytes on a 32-bit chip) and in the list of
 what is drawn (`sections::Drawn`, 20 bytes), both reserved exactly, and its title and summary, which keep a heap block
-each once they are longer than 15 bytes (at most 48 bytes each). Its four LVGL objects (panel, icon, title, summary) are
+each once they are longer than 15 bytes (at most 48 bytes each). Both lists and those blocks take PSRAM first
+(`roomy.h`), so on a board with PSRAM they mostly leave the chip; the price stays as it is until it is measured again
+on the screens. Its four LVGL objects (panel, icon, title, summary) are
 about 1 KB, in PSRAM, where LVGL allocates on these boards, and stay out of the budget: sixteen sections on each of
 sixteen pages take some 256 KB of a P4's 29 MB. `module_sections.h` stops a 32-bit build whose sizes outgrow the price. A
 screen that does not draw sections is sent none, so the add-on and the editor count them only where its hello says

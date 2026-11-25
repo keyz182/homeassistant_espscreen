@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include "roomy.h"
 
 namespace section_layout {
 // At most this many sections on a page (the add-on's core.STORE_MAX_SECTIONS), their titles at most this long.
@@ -25,14 +26,14 @@ constexpr unsigned DIM = 8;
 struct Section {
   uint8_t column = 0, row = 0, columns = 1, rows = 1;
   uint32_t icon = 0;        // a Material Design Icons codepoint, 0 for none
-  std::string title;
-  std::string summary;      // an entity's state at the title's right end, as the add-on formats it; empty for none
+  roomy::Text title;        // the words take PSRAM first on a board that has it (roomy.h), the block itself too
+  roomy::Text summary;      // an entity's state at the title's right end, as the add-on formats it; empty for none
   bool contrast = false;    // the panel in the page's opposite colour, its words in its ink (off unless chosen)
   bool follow = false;      // with contrast: the whole section in the other look, its tiles' cards too
 };
 
 // Every block inside a grid of `columns` x `rows`, none over another, at most MAX of them.
-inline bool valid(const std::vector<Section> &sections, unsigned columns, unsigned rows) {
+inline bool valid(const roomy::List<Section> &sections, unsigned columns, unsigned rows) {
   if (sections.size() > MAX || columns > DIM || rows > DIM) return false;
   uint64_t taken = 0;
   for (const auto &s : sections) {
