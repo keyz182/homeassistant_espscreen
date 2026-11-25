@@ -15,6 +15,7 @@
 // The week and a tall day scroll through the hours; the day has a strip of the week's days; the month a glance of
 // dots or titles; a tapped event opens a sheet with everything Home Assistant knows of it.
 // Every decision follows from the room and the board's faces and millimetres, never from a board's name.
+#include "roomy.h"
 #include "ui_scale.h"
 
 #include <algorithm>
@@ -32,23 +33,23 @@ struct Event {
   int start = 0, end = 0;  // minutes from today 00:00 (negative: before today); an all-day event spans whole days
   uint8_t flags = 0;       // ALL_DAY, TENTATIVE, PRIVATE
   uint8_t cal = 0;         // which calendar of the card
-  std::string title, place;
+  roomy::Text title, place;  // PSRAM first: a tile keeps its events as long as its page (roomy.h)
 };
 constexpr uint8_t ALL_DAY = 1, TENTATIVE = 2, PRIVATE = 4;
 struct Data {
   int year = 0, month = 0, day = 0, weekday = 0;  // today; weekday 0 is Monday
-  std::vector<uint32_t> colors;                   // one per calendar: Home Assistant's colour for it
-  std::vector<std::string> names;                 // the calendars' names, for the event sheet
-  std::vector<Event> events;                      // sorted by start
+  roomy::List<uint32_t> colors;                   // one per calendar: Home Assistant's colour for it
+  roomy::List<roomy::Text> names;                 // the calendars' names, for the event sheet
+  roomy::List<Event> events;                      // sorted by start
   int from = 0, to = 7;                           // days (from today) the events cover
   int left_out = 0;                               // events the message had no room for
-  std::string notes;                              // the description of the event of the moment, or the next one
+  roomy::Text notes;                              // the description of the event of the moment, or the next one
   bool asks = false;                              // the events are short: a tap asks the app for the rest (Detail)
   int glance_from = 0;                            // the month glance: its first day, from today
-  std::vector<uint8_t> glance;                    // one mask per day from there: bit n = calendar n has something
+  roomy::List<uint8_t> glance;                    // one mask per day from there: bit n = calendar n has something
   // "Status and booking" with booking on (the app sends it only for a calendar that takes new events): the calendar a
   // key books on, the place and the title the booking gets.
-  std::string book_on, book_place, book_title;
+  roomy::Text book_on, book_place, book_title;
 };
 // The rest of a tapped event, the app's answer when the events are short (Data::asks): its whole title, place and notes,
 // for the event of that calendar, start and end.
@@ -255,7 +256,7 @@ inline Status status(const Data &d, Moment t, const Options &o) {
   s.soon = s.now < 0 && s.next >= 0 && o.soon > 0 && !all_day(d.events[s.next]) && d.events[s.next].start - T <= o.soon;
   return s;
 }
-inline std::string title_of(const Event &e, const Words &w) { return (e.flags & PRIVATE) || e.title.empty() ? w.private_title : e.title; }
+inline std::string title_of(const Event &e, const Words &w) { return (e.flags & PRIVATE) || e.title.empty() ? w.private_title : roomy::plain(e.title); }
 // The date of a day from today (the month's day number), with the months' lengths.
 inline int days_in(int year, int month) {
   static const int n[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
@@ -443,7 +444,7 @@ inline void event_line(Pen &p, int x, int y, int w, const Data &d, const Event &
     return;
   }
   p.text(tx, y, tw, title_face(), Paint{past ? MUTED : INK}, title_of(e, wd));
-  const std::string times = span_of(wd, d, e), with_place = times + (e.place.empty() ? "" : " · " + e.place);
+  const std::string times = span_of(wd, d, e), with_place = times + (e.place.empty() ? "" : " · " + roomy::plain(e.place));
   p.text(tx, y + L(m, title_face()) + P(2, 1), tw, meta_face(), Paint{MUTED}, m.width(meta_face(), with_place) <= tw ? with_place : times);
 }
 // The list module: a grey block of rows grouped by day. Wide enough (70 mm), the date stands in a column at the left;
@@ -1119,7 +1120,7 @@ inline void day_list(Pen &p, int x, int y, int w, int h, const Data &d, Moment t
     p.text(tx, yy + mp, W, tf, ink, title_of(e, wd));
     const std::string right = running ? left_of(wd, d, e, t) : "";
     const int rw = right.empty() ? 0 : m.width(mf, right) + 2;
-    const std::string meta = span_of(wd, d, e) + (e.place.empty() ? "" : " · " + e.place);
+    const std::string meta = span_of(wd, d, e) + (e.place.empty() ? "" : " · " + roomy::plain(e.place));
     p.text(tx, yy + mp + L(m, tf) + P(2, 1), W - rw - (rw ? P(8, 4) : 0), mf, ink, meta);
     if (rw) p.text(tx + W - rw, yy + mp + L(m, tf) + P(2, 1), rw, mf, ink, right, RIGHT);
     yy += h1 + P(8, 4);
@@ -1254,7 +1255,7 @@ inline void sheet(Pen &p, int width, int height, int margin, const Data &d, Mome
   // An event's own notes (the app's answer) take a few lines more than the short notes of the event of the moment.
   const int k = key_size(m), most_notes = answered ? (large() ? 6 : 4) : (large() ? 3 : 2), iw = L(m, ICON) + P(10, 4);
   const Status s = status(d, t, Options{});
-  const std::string &note = answered ? more.notes : d.notes;
+  const std::string note = answered ? more.notes : roomy::plain(d.notes);
   const bool has_note = !note.empty() && (answered || index == (s.now >= 0 ? s.now : s.next));
   // The title on up to two lines (the whole of it is why the sheet was opened), the notes on the lines they take: the
   // sheet is as tall as what it holds.
@@ -1275,7 +1276,7 @@ inline void sheet(Pen &p, int width, int height, int margin, const Data &d, Mome
   p.sc.texts.push_back({x + pad, yy + (hh - L(m, g)) / 2, circle, g, cal(CAL_KEY, e.cal), CENTRE, GLYPH_CALENDAR});
   const int tx = x + pad + circle + P(10, 12);
   p.para(tx, yy + (hh - th) / 2, tw, LABEL, Paint{INK}, title, title_lines);
-  p.text(tx, yy + (hh - th) / 2 + title_lines * L(m, LABEL) + head_gap(), tw, SMALL, Paint{MUTED}, e.cal < d.names.size() ? d.names[e.cal] : "");
+  p.text(tx, yy + (hh - th) / 2 + title_lines * L(m, LABEL) + head_gap(), tw, SMALL, Paint{MUTED}, e.cal < d.names.size() ? roomy::plain(d.names[e.cal]) : "");
   const int kx = x + pad + W - k;
   p.box(kx, yy + (hh - k) / 2, k, k, Paint{KEY}, k / 2);
   p.sc.texts.push_back({kx, yy + (hh - k) / 2 + (k - L(m, ICON)) / 2, k, ICON, Paint{INK}, CENTRE, GLYPH_CLOSE});
@@ -1290,7 +1291,7 @@ inline void sheet(Pen &p, int width, int height, int margin, const Data &d, Mome
   yy += L(m, mf) + P(12, 4);
   if (!e.place.empty()) {
     p.sc.texts.push_back({x + pad, yy + (L(m, mf) - L(m, ICON)) / 2, iw, ICON, Paint{MUTED}, LEFT, GLYPH_PLACE});
-    p.text(x + pad + iw, yy, W - iw, mf, Paint{INK}, e.place);
+    p.text(x + pad + iw, yy, W - iw, mf, Paint{INK}, roomy::plain(e.place));
     yy += L(m, mf) + P(12, 4);
   }
   if (has_note && yy < y + h - pad) p.para(x + pad + iw, yy, W - iw, mf, Paint{MUTED}, note, std::min(lines_note, (y + h - pad - yy) / std::max(1, L(m, mf))));
@@ -1332,12 +1333,12 @@ inline void choice(Pen &p, int width, int height, int margin, const HeaderPlace 
   int cx = x + ix, row = 0;
   for (size_t c = 0; c < d.names.size() && c < 8; ++c) {
     const bool shown = !(hidden & (1u << c));
-    const int tw = std::min(m.width(CONTROL, d.names[c]), w / 2), chip_w = dot + P(10, 5) + tw + P(32, 16);
+    const int tw = std::min(m.width(CONTROL, roomy::plain(d.names[c])), w / 2), chip_w = dot + P(10, 5) + tw + P(32, 16);
     if (cx + chip_w > x + w - ix) { if (row) break; ++row; cx = x + ix; yy += chip_h + P(8, 4); if (yy + chip_h > y + sheet_h) break; }
     if (shown) p.box(cx, yy, chip_w, chip_h, cal(CAL_BLOCK, (uint8_t) c), chip_h / 2);
     else p.framed(cx, yy, chip_w, chip_h, Paint{RAISED}, Paint{GRID}, chip_h / 2, P(2, 1));
     p.box(cx + P(16, 8), yy + (chip_h - dot) / 2, dot, dot, shown ? cal(CAL_KEY, (uint8_t) c) : Paint{SUBTLE}, dot / 2);
-    p.text(cx + P(16, 8) + dot + P(10, 5), yy + (chip_h - L(m, CONTROL)) / 2, tw + 2, CONTROL, shown ? cal(CAL_INK, (uint8_t) c) : Paint{MUTED}, d.names[c]);
+    p.text(cx + P(16, 8) + dot + P(10, 5), yy + (chip_h - L(m, CONTROL)) / 2, tw + 2, CONTROL, shown ? cal(CAL_INK, (uint8_t) c) : Paint{MUTED}, roomy::plain(d.names[c]));
     p.hit(cx, yy, chip_w, chip_h, HIT_CALENDAR, (int) c);
     cx += chip_w + P(10, 5);
   }

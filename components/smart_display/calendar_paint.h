@@ -11,8 +11,9 @@
 namespace calendar_paint {
 namespace cc = calendar_card;
 
-// A plan's paint as this look draws it: the theme's roles, and a calendar's own colour from the card's data.
-inline uint32_t colour(cc::Paint p, const std::vector<uint32_t> &colors) {
+// A plan's paint as this look draws it: the theme's roles, and a calendar's own colour from the card's data. `colors` is
+// any list of 0xRRGGBB with size() and [] (the card's roomy::List, the todo module's std::vector).
+template <class Colors = std::vector<uint32_t>> inline uint32_t colour(cc::Paint p, const Colors &colors) {
   // The room's state (calendar_card FREE_COLOUR, BUSY_COLOUR): Home Assistant's green and red, painted as a calendar's.
   const uint32_t key = p.cal == cc::FREE_COLOUR ? theme::ha::GREEN : p.cal == cc::BUSY_COLOUR ? theme::ha::RED
                        : p.cal < colors.size() ? colors[p.cal] : theme::ha::BLUE;
@@ -52,7 +53,8 @@ inline bool meets(const lv_area_t &clip, int x1, int y1, int x2, int y2) {
 }
 // Paints `sc` with its origin at (ox, oy); only what meets the layer's clip area is handed to LVGL, so a scroll redraws
 // the strip that comes into view, not the day.
-inline void paint(lv_layer_t *layer, const cc::Scene &sc, int ox, int oy, const Faces &faces, const std::vector<uint32_t> &colors) {
+template <class Colors = std::vector<uint32_t>>
+inline void paint(lv_layer_t *layer, const cc::Scene &sc, int ox, int oy, const Faces &faces, const Colors &colors) {
   const lv_area_t clip = layer->_clip_area;
   for (auto &b : sc.boxes) {
     const int x1 = ox + b.x, y1 = oy + b.y, x2 = x1 + b.w - 1, y2 = y1 + b.h - 1;

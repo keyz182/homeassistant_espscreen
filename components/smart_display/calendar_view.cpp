@@ -91,7 +91,7 @@ static int civil(int y, int m, int d) {
 // The card's data, or a day without events on today's date when the app has sent none yet.
 static std::shared_ptr<const cc::Data> data_of(const Tile &t) {
   if (t.extra().calendar) return t.extra().calendar;
-  auto d = std::make_shared<cc::Data>();
+  auto d = roomy::make<cc::Data>();
   const auto now = rt::now_time ? rt::now_time() : esphome::ESPTime{};
   if (now.is_valid()) { d->year = now.year; d->month = now.month; d->day = now.day_of_month; d->weekday = (now.day_of_week + 5) % 7; }
   else { d->year = 2026; d->month = 1; d->day = 1; d->weekday = 3; }
@@ -183,7 +183,7 @@ bool card_tap(Widgets &w, const Tile &t) {
   };
   const std::string from = stamp(start), until = stamp(end);
   using namespace rt;
-  const std::string title = d.book_title.empty() ? tr(txt::calendar_booked) : d.book_title;
+  const std::string title = d.book_title.empty() ? tr(txt::calendar_booked) : roomy::plain(d.book_title);
   esphome::api::HomeassistantActionRequest request;
   request.service = api_text::of("calendar.create_event");
   request.data.init(d.book_place.empty() ? 4 : 5);
@@ -193,12 +193,12 @@ bool card_tap(Widgets &w, const Tile &t) {
     entry.value = api_text::of(value);
     request.data.push_back(entry);
   };
-  field("entity_id", d.book_on);
+  field("entity_id", roomy::plain(d.book_on));
   field("summary", title);
   field("start_date_time", from);
   field("end_date_time", until);
-  if (!d.book_place.empty()) field("location", d.book_place);
-  rt::send_action(request, d.book_on, true, false);
+  if (!d.book_place.empty()) field("location", roomy::plain(d.book_place));
+  rt::send_action(request, roomy::plain(d.book_on), true, false);
   ESP_LOGI("calendar", "Booked %s from %s until %s", d.book_on.c_str(), from.c_str(), until.c_str());
   booking.entity = t.entity; booking.end = end; booking.at = esphome::millis(); booking.data = v->data;
   cc::plan_tile(v->scene, measure(), v->width, v->height, d, now, options(t), words(), t.name, v->edge);

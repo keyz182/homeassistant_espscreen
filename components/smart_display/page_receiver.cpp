@@ -1336,7 +1336,7 @@ std::string receive(const std::string &payload) {
     // a mask a day for the month's glance. A board without PSRAM keeps 24 events (catalogue/calendar.yaml prices them).
     if (tile.domain() == "calendar" && extra["cal"].is<JsonObject>()) {
       JsonVariant c = extra["cal"];
-      auto d = std::make_shared<calendar_card::Data>();
+      auto d = roomy::make<calendar_card::Data>();
       if (c["d"].is<JsonArray>()) {
         d->year = c["d"][0] | 0; d->month = std::clamp(c["d"][1] | 1, 1, 12); d->day = std::clamp(c["d"][2] | 1, 1, 31);
         d->weekday = std::clamp(c["d"][3] | 0, 0, 6);
@@ -1345,7 +1345,7 @@ std::string receive(const std::string &payload) {
       if (c["c"].is<JsonArray>()) for (JsonVariant k : c["c"].as<JsonArray>()) {
         if (d->colors.size() == 8) break;
         d->colors.push_back(k[0].is<uint32_t>() ? (k[0].as<uint32_t>() & 0xFFFFFF) : 0);
-        d->names.push_back(string(k[1], 32));
+        d->names.push_back(roomy::text(string(k[1], 32)));
       }
       // As many as it keeps (80 with PSRAM, 48 without: the app's budget of the message bounds what they hold), the nearest
       // to now first, as the app orders them; the rest are counted with the ones the app left out, never dropped in
@@ -1377,22 +1377,22 @@ std::string receive(const std::string &payload) {
         if (!keep[at++]) continue;
         calendar_card::Event ev;
         ev.start = e[0] | 0; ev.end = e[1] | 0; ev.flags = (uint8_t) (e[2] | 0); ev.cal = (uint8_t) std::clamp(e[3] | 0, 0, 7);
-        ev.title = string(e[4], 64); ev.place = string(e[5], 40);
+        ev.title = roomy::text(string(e[4], 64)); ev.place = roomy::text(string(e[5], 40));
         if (ev.end <= ev.start) ev.end = ev.start + 1;
         d->events.push_back(std::move(ev));
       }
       std::stable_sort(d->events.begin(), d->events.end(), [](const calendar_card::Event &a, const calendar_card::Event &b) { return a.start < b.start; });
       d->left_out = std::max(0, c["m"] | 0) + (int) extra_left;
       d->asks = (c["a"] | 0) == 1;
-      d->notes = string(c["n"], 200);
+      d->notes = roomy::text(string(c["n"], 200));
       if (c["g"].is<JsonArray>()) {
         d->glance_from = std::clamp(c["g"][0] | 0, -62, 0);
         if (c["g"][1].is<JsonArray>()) for (JsonVariant mask : c["g"][1].as<JsonArray>()) { if (d->glance.size() == 62) break; d->glance.push_back((uint8_t) (mask | 0)); }
       }
       if (c["b"].is<JsonArray>()) {
-        d->book_on = string(c["b"][0], 128);
-        if (d->book_on.rfind("calendar.", 0) != 0) d->book_on.clear();
-        d->book_place = string(c["b"][1], 48); d->book_title = string(c["b"][2], 48);
+        const std::string on = string(c["b"][0], 128);
+        if (on.rfind("calendar.", 0) == 0) d->book_on = roomy::text(on);
+        d->book_place = roomy::text(string(c["b"][1], 48)); d->book_title = roomy::text(string(c["b"][2], 48));
       }
       next.calendar = std::move(d);
     }
