@@ -1748,8 +1748,8 @@ inline bool render_tall(Widgets &w,const Tile &t,bool selected,int width,int hei
   auto body=l.body;
   if(d=="media_player"){
     const auto &x=t.extra();
-    const std::string title=fresh()&&t.available()&&media_card::has_track(t.state)?x.media_title:std::string();
-    const std::string artist=media_card::subtitle(x.media_artist,x.media_album);
+    const std::string title=fresh()&&t.available()&&media_card::has_track(t.state)?roomy::plain(x.media_title):std::string();
+    const std::string artist=media_card::subtitle(roomy::plain(x.media_artist),roomy::plain(x.media_album));
     // The largest step of the board's text fonts that fits (docs/RESPONSIVE.md, "One set of fonts"): on a large card
     // the track in the large value's face with its artist in the top bar's, then the page headline over the small text,
     // then the tile's name. The large face only where the whole title fits the width (a marquee that size reads badly)

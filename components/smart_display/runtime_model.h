@@ -312,12 +312,12 @@ struct Blind {
 struct Extra {
   // The effect a light runs (its `effect` attribute), and the rows of its effects page.
   std::string effect;
-  std::vector<OptionRow> option_rows;
-  std::vector<NumberRow> number_rows;
+  roomy::List<OptionRow> option_rows;
+  roomy::List<NumberRow> number_rows;
   // The lamps of a light group, for its lamp page.
-  std::vector<Lamp> lamps;
+  roomy::List<Lamp> lamps;
   // The covers of a cover group, for its page (firmware 0.57.0).
-  std::vector<Blind> blinds;
+  roomy::List<Blind> blinds;
   // Climate: the modes as JSON lists, the current fan and swing mode, and what it is doing now.
   std::string hvac_modes, fan_modes, swing_modes, fan_mode, swing_mode, hvac_action;
   // A humidifier (firmware 0.42.0+) keeps its modes (available_modes) in hvac_modes and what it does (action) in
@@ -327,26 +327,26 @@ struct Extra {
   // one instead of a single temperature: heat_cool, and auto on some.
   float target_low = NAN, target_high = NAN;
   // A select's options, sixteen at most; a remote's activities (activity_list, firmware 0.22.0+) are these too.
-  std::vector<std::string> options;
+  roomy::List<std::string> options;
   // The activity a remote runs (current_activity, firmware 0.22.0+): Harmony's and Android TV Remote's.
   std::string activity;
   // A remote's keypad (firmware 0.22.0+): the command of each key in the order of catalogue/remote.yaml's keypad (up, down,
   // left, right, OK, back, home, play, volume up, volume down, mute), empty where the remote has no such key. The add-on
   // sends it for an integration whose commands it read from Home Assistant; a remote without one has none.
-  std::vector<std::string> keypad;
+  roomy::List<std::string> keypad;
   // Weather: up to seven days and the next hours (weather_week::HOURS), and the attributes its card shows as Home
   // Assistant's more-info dialog does.
-  std::vector<Forecast> forecast;
-  std::vector<Hour> hours;
+  roomy::List<Forecast> forecast;
+  roomy::List<Hour> hours;
   float wind = NAN, feels = NAN, bearing = NAN, pressure = NAN, visibility = NAN;
   std::string wind_unit, pressure_unit, visibility_unit, rain_unit;
   std::string sunrise, sunset, duration, remaining;
   uint32_t timer_end = 0;
-  std::string media_title;
+  roomy::Text media_title;
   // The media card (firmware 0.2.64+, app 0.2.77+): the artist and the album, the track's length and where it was when
   // Home Assistant last said so (seconds, and that moment as an epoch), and a short mark of the cover picture, empty
   // when the player shows none. The mark changes with the picture: the card fetches a new cover when it does.
-  std::string media_artist, media_album, media_picture;
+  roomy::Text media_artist, media_album, media_picture;
   // A map card's movement mark (firmware 0.20.0+, app 0.4.33): a short hash the app works out of where the card's people
   // are, their states, the zones and the card's own choices (map_card.fingerprint). The screen never sees a place; it
   // folds this into the picture it asks for, so a map is drawn again when something moved and never on a clock.
@@ -371,14 +371,14 @@ struct Extra {
   // widest when that is more than now (a player at rest keeps the keys it had, faded: GitHub #88), the two colours of
   // its cover that the card's ground is made of, and whether its library opens.
   std::string media_source, media_repeat;
-  std::vector<std::string> media_sources;
+  roomy::List<std::string> media_sources;
   // Where a player plays (firmware 0.26.0+, the app's speakers.py): per speaker of media_sources its flags (SPEAKER_ON,
   // SPEAKER_GROUPS) and its volume (0 to 100, -1 for none), the inputs Home Assistant lists in source_list for a player
   // whose sources are inputs (a Sonos's TV input, a TV's ports) with the one in use, and the speaker the card follows:
   // its media keys act on that player. A media_source here is the pill's words ("Living room + 1").
   std::vector<uint8_t> speaker_flags;
   std::vector<int8_t> speaker_volumes;
-  std::vector<std::string> media_inputs;
+  roomy::List<std::string> media_inputs;
   std::string media_input, media_target;
   int8_t media_shuffle = -1;
   // ground: the media card's colour, read from the cover by the app (has_ground). ground_known: the app read the cover
@@ -391,9 +391,9 @@ struct Extra {
   bool fav_playing = false;
   // Vacuum: its own speeds (at most four) and speed, the mode, water and suction rows (see Choice), and
   // from sensors of its device the room it is in and whether it charges.
-  std::vector<std::string> fan_speeds;
+  roomy::List<std::string> fan_speeds;
   std::string fan_speed;
-  std::vector<Choice> choices;
+  roomy::List<Choice> choices;
   std::string room;
   bool charging = false;
   // Cover (firmware 0.2.50+): the tilt of its slats, 0 closed to 100 open.
@@ -401,20 +401,21 @@ struct Extra {
   // A tap that performs a Home Assistant action of the tile's own choosing (firmware 0.2.58+): the action, its data as
   // text, and the values Home Assistant renders itself (numbers, lists, true or false) as templates.
   std::string action;
-  std::vector<std::pair<std::string, std::string>> action_data, action_templates;
+  roomy::List<std::pair<std::string, std::string>> action_data, action_templates;
   // Home Assistant's word for the state where the screen has none of its own (app 0.2.67+): "Open", "Playing", "Rinsing".
   std::string state_word;
   // A value of this entity that the second line was set to (firmware 0.2.90+, "attr:<name>"): the app reads the
   // attribute from Home Assistant, writes it the way Home Assistant writes it and sends the finished line. A
   // moment in time comes as seconds instead, so the screen says it in its own words and its own clock, the way
   // it already says when a script last ran (last_run_text) - one wording, not a second one in Python.
-  std::string subtitle;
+  roomy::Text subtitle;
   uint32_t subtitle_at = 0;
   // An alarm panel (firmware 0.3.3+): its code_format ("number", "text" or empty), whether arming needs no code
   // (code_arm_required false), whether Home Assistant keeps a default code for it (app, from the entity's registry
   // options; never the code itself), who changed it last, and the end of an exit or entry delay with its length in
   // seconds, where the integration says (Alarmo's `delay`, through the app).
-  std::string code_format, changed_by;
+  roomy::Text code_format;
+  std::string changed_by;
   bool arm_code_free = false, code_saved = false;
   uint32_t alarm_end = 0, alarm_delay = 0;
   // A lock (firmware 0.5.0+) shares code_format, changed_by and code_saved with the alarm panel, and says whether the
@@ -426,7 +427,7 @@ struct Extra {
   // they took the room Wi-Fi needs (2026-10-13).
   roomy::Text plugin_options, plugin_state;
   // The Home Assistant entity a plugin tile belongs to (its manifest's `entity`), "" for none.
-  std::string plugin_entity;
+  roomy::Text plugin_entity;
   Choice *choice(char kind) { for (auto &c : choices) if (c.kind == kind) return &c; return nullptr; }
   bool empty() const {
     return hvac_modes.empty() && fan_modes.empty() && swing_modes.empty() && fan_mode.empty() && swing_mode.empty() &&

@@ -62,7 +62,7 @@ inline bool tile_ask(const Widgets &w, const Tile &t, tile_picture::Ask &a) {
   a.entity = t.entity;
   // A favourite's picture is what it plays (firmware 0.24.0+), never the player's cover; a map's mark is where its
   // people are (app 0.4.33). A camera has none: its next picture is the same picture, newer.
-  a.mark = t.cover_tile() ? t.extra().media_picture : t.favorite() ? t.extra().fav_mark : t.is_map() ? t.extra().map_mark : std::string();
+  a.mark = t.cover_tile() ? roomy::plain(t.extra().media_picture) : t.favorite() ? t.extra().fav_mark : t.is_map() ? t.extra().map_mark : std::string();
   a.circle = lv_obj_get_style_width(w.circle, LV_PART_MAIN);
   a.dark = theme::dark;
   // A tile set to Live (pace 0) that cannot stream (another board, no room, an app without streams) refreshes its

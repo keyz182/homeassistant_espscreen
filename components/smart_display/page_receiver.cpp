@@ -1013,7 +1013,7 @@ std::string receive(const std::string &payload) {
     auto act = root["o"]["act"];
     if (initial && act.is<JsonObject>()) {
       std::string service = string(act["s"], 64);
-      auto pairs = [](JsonVariant list, std::vector<std::pair<std::string, std::string>> &out) {
+      auto pairs = [](JsonVariant list, roomy::List<std::pair<std::string, std::string>> &out) {
         if (!list.is<JsonArray>()) return;
         for (JsonVariant pair : list.as<JsonArray>()) {
           if (out.size() == 8 || !pair.is<JsonArray>() || pair.as<JsonArray>().size() != 2) continue;

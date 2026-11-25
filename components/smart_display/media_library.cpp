@@ -483,7 +483,7 @@ void received(Answer &&answer) {
 static bool menu_inputs = false;
 static std::vector<size_t> menu_starts;  // the first row of each page
 static void draw_menu();
-static const std::vector<std::string> *menu_list(const Tile *t) {
+static const roomy::List<std::string> *menu_list(const Tile *t) {
   if (!t) return nullptr;
   return menu_inputs ? &t->extra().media_inputs : &t->extra().media_sources;
 }

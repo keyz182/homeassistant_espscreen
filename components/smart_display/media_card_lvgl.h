@@ -295,7 +295,7 @@ inline uint32_t media_elapsed(const Tile &t){
   const auto &x=t.extra();
   const bool play=media_card::playing(t.state);
   const uint32_t now=now_epoch();
-  if(media_seek_entity==t.entity&&media_seek.holds(x.media_position,x.media_position_at,esphome::millis(),now,play,x.media_title)){
+  if(media_seek_entity==t.entity&&media_seek.holds(x.media_position,x.media_position_at,esphome::millis(),now,play,roomy::plain(x.media_title))){
     uint32_t at=media_seek.seconds+(play&&now>media_seek.epoch?now-media_seek.epoch:0);
     return x.media_duration?std::min(at,x.media_duration):at;
   }
@@ -328,7 +328,7 @@ inline void media_seek_event(lv_event_t *e){
   if(code!=LV_EVENT_RELEASED||!media_seeking)return;
   media_seeking=false;
   if(!fresh()||!t.available())return;
-  media_seek.send(seconds,esphome::millis(),now_epoch(),x.media_title);media_seek_entity=t.entity;
+  media_seek.send(seconds,esphome::millis(),now_epoch(),roomy::plain(x.media_title));media_seek_entity=t.entity;
   media_bar_at(seconds,x.media_duration,media_progress_fill,media_elapsed_label,media_bar_width);
   action("media_player.media_seek",media_entity(t),"seek_position",std::to_string(seconds));
 }
@@ -431,7 +431,7 @@ inline void media_face_follow(const Tile &t){
   // not, but a pointer to freed memory on the glass is no risk worth taking).
   if(media_face.src&&!picture_kept_here(media_face.src)){media_face.src=nullptr;media_face.key.clear();}
   const bool pictured=camera_supported()&&media_art_size>0&&media_track(t)&&!x.media_picture.empty();
-  const std::string waited=t.entity+"|"+x.media_picture;
+  const std::string waited=t.entity+"|"+roomy::plain(x.media_picture);
   if(waited!=media_ground_waited){media_ground_waited=waited;media_ground_since=now;}
   const bool pending=pictured&&!x.ground_known&&now-media_ground_since<MEDIA_GROUND_WAIT_MS;
   // The cover's corners are cut over the card's colour, so the colour is part of which cover it is.
@@ -442,7 +442,7 @@ inline void media_face_follow(const Tile &t){
   auto recheck=[&](uint32_t at){if(!due||static_cast<int32_t>(at-due)<0)due=at;};
   if(pending)recheck(media_ground_since+MEDIA_GROUND_WAIT_MS);
   // The cover goes to the loader with the next round (card_cover_want); what the store has of it is here at once.
-  media_card_cover=pictured&&!pending?CoverAsk{t.entity,x.media_picture,media_art_size,ground}:CoverAsk{};
+  media_card_cover=pictured&&!pending?CoverAsk{t.entity,roomy::plain(x.media_picture),media_art_size,ground}:CoverAsk{};
   lv_image_dsc_t *src=media_card_cover.valid()?picture_of(key):nullptr;
   media_face.recheck=0;
   // The new cover is here: it and its colour, together. The one it takes over from goes from the store once nothing
@@ -504,11 +504,11 @@ inline void media_soft_paint(lv_obj_t *text,const Tile &,const CardPart &){
 // The title, or what the player does when nothing plays; a new text starts its roll again, the same one rolls on.
 inline void media_title_paint(lv_obj_t *line,const Tile &t,const CardPart &){
   const auto &x=t.extra();
-  label(line,media_track(t)&&!x.media_title.empty()?x.media_title:std::string(media_card::idle_text(media_usable(t)?t.state:"unavailable")));
+  label(line,media_track(t)&&!x.media_title.empty()?roomy::plain(x.media_title):std::string(media_card::idle_text(media_usable(t)?t.state:"unavailable")));
 }
 inline void media_artist_paint(lv_obj_t *line,const Tile &t,const CardPart &part){
   const auto &x=t.extra();
-  label(line,media_track(t)?media_card::subtitle(x.media_artist,x.media_album):media_at_rest(t)?std::string(tr(txt::media_library_hint)):std::string());
+  label(line,media_track(t)?media_card::subtitle(roomy::plain(x.media_artist),roomy::plain(x.media_album)):media_at_rest(t)?std::string(tr(txt::media_library_hint)):std::string());
   media_soft_paint(line,t,part);
 }
 // The main key (play or pause, power on) is white with the card's colour in its icon.

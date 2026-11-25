@@ -1,5 +1,7 @@
+#define THEME_TEST
 #include "screen_text_en.h"
 #include "../components/smart_display/runtime_model.h"
+#include "../components/smart_display/lock_panel.h"
 #include <cassert>
 // A test fixture uses the same single-store transaction as the receiver.
 static void seed(runtime_tiles::Model &m, std::initializer_list<const char *> entities, unsigned pages = 1) {
@@ -404,3 +406,26 @@ static void test_map_tile() {
   assert(!marked.extra().empty() && marked.extra().map_mark == "a1b2c3");
 }
 struct RunMapTile { RunMapTile() { test_map_tile(); } } run_map_tile;
+// A tile's extra lists and long strings take PSRAM first (roomy.h), at the size the price was worked out for: a Text is
+// a std::string's size and a List a std::vector's, so docs/TILE_MEMORY.md's numbers stand. A code pattern of any length
+// reaches the lock panel's rules unchanged, inside the string's own buffer (8 bytes) or past it (17).
+static_assert(sizeof(roomy::Text) == sizeof(std::string), "a Text costs a std::string's bytes in Extra");
+static_assert(sizeof(roomy::List<std::string>) == sizeof(std::vector<std::string>), "a List costs a vector's bytes");
+static void test_extra_roomy() {
+  using namespace runtime_tiles;
+  Tile t;
+  t.edit_extra().code_format = "^\\d{4}$";
+  assert(lock_panel::needs_code(roomy::plain(t.extra().code_format), false));
+  assert(lock_panel::code_typable(roomy::plain(t.extra().code_format)));
+  t.edit_extra().code_format = roomy::text(std::string("^(\\d{4}|\\d{6,8})$"));
+  assert(t.extra().code_format.size() == 17 && roomy::same(t.extra().code_format, std::string("^(\\d{4}|\\d{6,8})$")));
+  assert(lock_panel::code_typable(roomy::plain(t.extra().code_format)));
+  t.edit_extra().media_title = "A Track Title Longer Than Fifteen";
+  t.edit_extra().media_sources.assign({"Radio", "Bluetooth", "Line in"});
+  t.edit_extra().action_data.push_back({"volume_level", "0.4"});
+  const Tile copy = t;
+  assert(roomy::plain(copy.extra().media_title) == "A Track Title Longer Than Fifteen");
+  assert(copy.extra().media_sources.size() == 3 && copy.extra().media_sources[1] == "Bluetooth");
+  assert(copy.extra().action_data[0].second == "0.4");
+}
+struct RunExtraRoomy { RunExtraRoomy() { test_extra_roomy(); } } run_extra_roomy;

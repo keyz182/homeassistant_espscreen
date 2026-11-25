@@ -647,7 +647,7 @@ inline std::string status_text(const Tile &t) {
     return text;
   }
   if (d == "media_player") {
-    const std::string &title = t.extra().media_title;
+    const std::string title = roomy::plain(t.extra().media_title);
     std::string text = (t.state == "playing" || t.state == "paused") && !title.empty() ? title : media_state_text(t.state);
     if (std::isfinite(t.volume) && (t.supported & feature::MEDIA_VOLUME_SET)) text += " · " + screen_text::percent((int) std::lround(t.volume * 100));
     return text;

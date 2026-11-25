@@ -320,7 +320,7 @@ inline void render_media_full(Widgets &w,const Tile &t,bool big,int content_w,in
   // wrong corners first and for the right one after its first drawing.
   const uint32_t ground=t.transparent?card_ground(w):card_surface(w);
   const bool pictured=camera_supported()&&track&&!x.media_picture.empty();
-  w.cover_entity=pictured?t.entity:std::string();w.cover_mark=pictured?x.media_picture:std::string();
+  w.cover_entity=pictured?t.entity:std::string();w.cover_mark=pictured?roomy::plain(x.media_picture):std::string();
   w.cover_size=l.art.w;w.cover_ground=ground;w.cover_rect=at(l.art);
   // What the store has of its cover is drawn at once; the loader fetches it otherwise (card_picture_wants), on the glass
   // and ahead for a kept page, and the card draws itself again when it is here.
@@ -346,8 +346,8 @@ inline void render_media_full(Widgets &w,const Tile &t,bool big,int content_w,in
     auto *p=part_label(w,i,font,r.x,r.y+top,r.w,align,value);lv_label_set_long_mode(p,LV_LABEL_LONG_DOT);set_color(p,LV_STYLE_TEXT_COLOR,theme::color(role));lv_obj_remove_flag(p,LV_OBJ_FLAG_HIDDEN);return p;
   };
   // The title and the artist line roll by when they are too long (firmware 0.2.77+), as on the card.
-  marquee(text(2,title_font,l.title,words_align,track&&!x.media_title.empty()?x.media_title:std::string(idle_text(usable?t.state:"unavailable")),theme::INK));
-  if(l.artist)marquee(text(3,artist_font,l.artist_line,words_align,track?subtitle(x.media_artist,x.media_album):std::string(),theme::MUTED));
+  marquee(text(2,title_font,l.title,words_align,track&&!x.media_title.empty()?roomy::plain(x.media_title):std::string(idle_text(usable?t.state:"unavailable")),theme::INK));
+  if(l.artist)marquee(text(3,artist_font,l.artist_line,words_align,track?subtitle(roomy::plain(x.media_artist),roomy::plain(x.media_album)):std::string(),theme::MUTED));
   else if(w.parts[3])lv_obj_add_flag(w.parts[3],LV_OBJ_FLAG_HIDDEN);
   // The progress bar and its times, wherever the keys are: at nought with 0:00 at both ends without a track or a length
   // (a stream, the moment between two tracks), as on the card (firmware 0.52.0; it went and came back before).

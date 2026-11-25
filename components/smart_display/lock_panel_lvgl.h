@@ -91,9 +91,9 @@ inline void lock_do(unsigned index,lock_panel::Act act,bool card){
   const uint32_t now=esphome::millis();
   if(!can(lock_of(t),act,lock_guard(t))||t.waiting(now))return;
   const auto &x=t.extra();
-  if(needs_code(x.code_format,x.code_saved)){
+  if(needs_code(roomy::plain(x.code_format),x.code_saved)){
     t.ask_act=-1;
-    if(!code_typable(x.code_format)){alarm_card_note=txt::alarm_letters;alarm_card_note_at=now;}
+    if(!code_typable(roomy::plain(x.code_format))){alarm_card_note=txt::alarm_letters;alarm_card_note_at=now;}
     else{alarm_wipe(alarm_pad.code);alarm_pad.open=true;alarm_pad.mode=act;alarm_pad.note=0;alarm_pad.entity=t.entity;}
     if(card)redraw_detail();else{active_index=(int)index;show_detail(index);}
     return;
