@@ -39,7 +39,7 @@ inline bool tile_ask(const Widgets &w, const Tile &t, tile_picture::Ask &a) {
     a.frame = tile_picture::frame(width, height, 0, 0, theme::hex(theme::TRACK), theme::hex(theme::TRACK), picture_cap());
     a.index = w.index;
     a.entity = t.entity;
-    a.mark = t.extra().vacuum ? t.extra().vacuum->map_mark : std::string();
+    a.mark = t.extra().vacuum ? roomy::plain(t.extra().vacuum->map_mark) : std::string();
     a.dark = theme::dark;
     a.drawn = true;
     a.source = picture_question::vacuum_source(t.entity);

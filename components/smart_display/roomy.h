@@ -22,6 +22,7 @@
 // Free of LVGL: tests/test_roomy.cpp checks it on a PC, where Text keeps the allocator over malloc.
 #include <cstddef>
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -88,6 +89,16 @@ template <class T> using List = std::vector<T, Allocator<T>>;
 static_assert(std::is_same<Text::allocator_type, Allocator<char>>::value, "with PSRAM, Text takes PSRAM first");
 static_assert(std::is_same<List<int>::allocator_type, Allocator<int>>::value, "with PSRAM, List takes PSRAM first");
 #endif
+
+// A shared object whose block (the object with its count) takes PSRAM first, as make_shared would make it; on a board
+// without PSRAM make_shared itself, for the same reason Text is std::string there.
+template <class T> inline std::shared_ptr<T> make() {
+#if defined(USE_ESP32) && !defined(USE_PSRAM)
+  return std::make_shared<T>();
+#else
+  return std::allocate_shared<T>(Allocator<T>());
+#endif
+}
 
 // Text from anything with data() and size() (std::string, a string_view), and back.
 template <class S> inline Text text(const S &from) { return Text(from.data(), from.size()); }

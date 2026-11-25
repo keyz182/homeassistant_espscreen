@@ -5,6 +5,7 @@
 #include <cmath>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 #include "cover_travel.h"
@@ -255,7 +256,7 @@ struct Fingerprint {
   uint32_t value = 2166136261u;
   size_t write(uint8_t c) { value = (value ^ c) * 16777619u; return 1; }
   size_t write(const uint8_t *data, size_t size) { for (size_t i = 0; i < size; ++i) write(data[i]); return size; }
-  void add(const std::string &text) { write(reinterpret_cast<const uint8_t *>(text.data()), text.size()); }
+  void add(std::string_view text) { write(reinterpret_cast<const uint8_t *>(text.data()), text.size()); }
 };
 inline uint32_t state_revision(const std::string &state, const std::string &attributes) {
   Fingerprint f;

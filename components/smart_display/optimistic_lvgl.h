@@ -30,8 +30,8 @@ inline light_presets::Light preset_light(const Tile &t) {
   // Its effect and its device's settings as they stand (the effects page's rows), for a preset that names them.
   const auto &x = t.extra();
   l.effect = x.effect;
-  for (const auto &r : x.option_rows) l.now.push_back({r.entity, r.current, NAN});
-  for (const auto &r : x.number_rows) l.now.push_back({r.entity, effects_page::number_text(r.value), r.value});
+  for (const auto &r : x.option_rows) l.now.push_back({roomy::text(r.entity), roomy::text(r.current), NAN});
+  for (const auto &r : x.number_rows) l.now.push_back({roomy::text(r.entity), roomy::text(effects_page::number_text(r.value)), r.value});
   return l;
 }
 // The preset the light shows now, or -1: a group's lamp by lamp where the screen has its lamps (light_presets::Lamp),
@@ -54,7 +54,7 @@ inline int preset_lit(const Tile &t) {
 // live, so Home Assistant has not reported it yet. Its key turns a spinner in the ring's place until it has.
 inline int preset_pending(const Tile &t) {
   if (!t.presets) return -1;
-  const auto on_way = [&](optimistic::Field field, const std::string &want, const std::string &item = "") {
+  const auto on_way = [&](optimistic::Field field, std::string_view want, const std::string &item = "") {
     const auto *w = wishes.find(t.entity, field, item);
     return w && w->want == want;
   };
@@ -63,7 +63,7 @@ inline int preset_pending(const Tile &t) {
     bool busy = (p.level && on_way(optimistic::Field::PRESET, light_presets::value(p))) ||
                 (!p.effect.empty() && on_way(optimistic::Field::EFFECT, p.effect));
     for (const auto &s : p.settings)
-      busy = busy || on_way(s.is_number() ? optimistic::Field::ROW_NUMBER : optimistic::Field::ROW_OPTION, s.text, s.entity);
+      busy = busy || on_way(s.is_number() ? optimistic::Field::ROW_NUMBER : optimistic::Field::ROW_OPTION, s.text, roomy::plain(s.entity));
     if (busy) return (int) n;
   }
   return -1;
@@ -276,12 +276,16 @@ inline void preset_wish(Tile &t, const light_presets::Preset &p) {
     wish(t, optimistic::Field::PRESET, light_presets::value(p), "light.turn_on", "brightness_pct", std::to_string(p.level), "", "", true,
          colour.key2, colour.value2);
   }
-  if (!p.effect.empty()) wish(t, optimistic::Field::EFFECT, p.effect, "light.turn_on", "effect", p.effect);
+  if (!p.effect.empty()) {
+    const std::string effect = roomy::plain(p.effect);
+    wish(t, optimistic::Field::EFFECT, effect, "light.turn_on", "effect", effect);
+  }
   for (const auto &s : p.settings) {
+    const std::string text = roomy::plain(s.text), entity = roomy::plain(s.entity);
     if (s.is_number())
-      wish(t, optimistic::Field::ROW_NUMBER, s.text, "number.set_value", "value", s.text, "", s.entity);
+      wish(t, optimistic::Field::ROW_NUMBER, text, "number.set_value", "value", text, "", entity);
     else
-      wish(t, optimistic::Field::ROW_OPTION, s.text, "select.select_option", "option", s.text, "", s.entity);
+      wish(t, optimistic::Field::ROW_OPTION, text, "select.select_option", "option", text, "", entity);
   }
 }
 #endif

@@ -11,14 +11,16 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <string_view>
 #include <vector>
+#include "roomy.h"
 
 namespace light_presets {
 constexpr unsigned MAX = 4;
 // A setting of the light's device (a row of its effects page, effects_page.h: a WLED's colour palette, speed, intensity,
 // its own preset or playlist): a select's option, or a number's value.
 struct Setting {
-  std::string entity, text;  // text: a select's option, or the number as it was sent
+  roomy::Text entity, text;  // text: a select's option, or the number as it was sent (PSRAM first, roomy.h)
   float number = NAN;        // a number's value; NAN for a select
   bool is_number() const { return std::isfinite(number); }
 };
@@ -31,8 +33,8 @@ struct Preset {
   uint8_t saturation = 0;  // 0-100, COLOUR
   uint16_t hue = 0;        // 0-359, COLOUR
   uint16_t kelvin = 0;     // WHITE
-  std::string effect;      // the light's effect (its effect_list), empty for none
-  std::vector<Setting> settings;
+  roomy::Text effect;      // the light's effect (its effect_list), empty for none
+  roomy::List<Setting> settings;
   // A preset of the lamp itself: its device's settings alone, which set the rest (a WLED preset sets its own everything).
   bool device() const { return level == 0 && !settings.empty(); }
   bool valid() const { return level > 0 || device(); }
@@ -40,13 +42,13 @@ struct Preset {
   bool neutral() const { return kind == LEVEL && (!effect.empty() || !settings.empty()); }
 };
 // The first two characters of a name ("Fi" of "Film"), whole UTF-8 characters.
-inline std::string initials(const std::string &name) {
+inline std::string initials(std::string_view name) {
   size_t i = 0;
   for (int n = 0; n < 2 && i < name.size(); ++n) {
     ++i;
     while (i < name.size() && (static_cast<unsigned char>(name[i]) & 0xC0) == 0x80) ++i;
   }
-  return name.substr(0, i);
+  return std::string(name.substr(0, i));
 }
 struct Presets {
   std::array<Preset, MAX> items{};
@@ -115,12 +117,12 @@ struct Light {
 };
 // The effect and the device's settings a preset names, standing as it names them (a number within half a step).
 inline bool settings_show(const Preset &p, const Light &l) {
-  if (!p.effect.empty() && l.effect != p.effect) return false;
+  if (!p.effect.empty() && !roomy::same(l.effect, p.effect)) return false;
   for (const auto &s : p.settings) {
     const Setting *n = nullptr;
-    for (const auto &c : l.now) if (c.entity == s.entity) { n = &c; break; }
+    for (const auto &c : l.now) if (roomy::same(c.entity, s.entity)) { n = &c; break; }
     if (!n) return false;
-    if (s.is_number() ? !(n->is_number() && std::fabs(n->number - s.number) <= 0.5f) : n->text != s.text) return false;
+    if (s.is_number() ? !(n->is_number() && std::fabs(n->number - s.number) <= 0.5f) : !roomy::same(n->text, s.text)) return false;
   }
   return true;
 }

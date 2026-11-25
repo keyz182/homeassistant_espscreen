@@ -154,7 +154,7 @@ inline std::string headline(const Tile &t) {
 inline void headline_paint(lv_obj_t *o, const Tile &t, const CardPart &) { label(o, headline(t)); }
 inline std::string detail_line(const Tile &t, int room, const lv_font_t *font) {
   const Data *d = data_of(t);
-  if (has_reason(t)) return d->error;
+  if (has_reason(t)) return roomy::plain(d->error);
   if (!cleaning(t)) return "";
   std::string parts[3] = {t.extra().room, d && d->progress >= 0 ? screen_text::percent(d->progress) : "",
                           d && std::isfinite(d->area) ? screen_text::with_unit(screen_text::decimal(d->area, 0), "m²") : ""};
@@ -275,7 +275,7 @@ inline void hero(const Tile &t, int x, int y, int w, int h, const Metrics &m, bo
   }
   if (mw < 16 || mh < 16) return;
   const Data *d = data_of(t);
-  map_ask = MapAsk{t.entity, d->map_entity, d->map_mark, mw, mh, theme::hex(theme::CARD), theme::dark};
+  map_ask = MapAsk{t.entity, roomy::plain(d->map_entity), roomy::plain(d->map_mark), mw, mh, theme::hex(theme::CARD), theme::dark};
 #if LV_USE_IMAGE
   const int size = ui::px(m.large ? 40 : 28);
   map_spinner = spinner_create(card, size, ui::px(m.large ? 4 : 3));
@@ -433,7 +433,7 @@ inline void how(const Tile &t, int x, int y, int w, const Metrics &m) {
 // Room chips: the room's icon and name; a picked one is blue, with its place in the order where the icon was.
 inline int chip_cols(const Data &d, int w, const Metrics &m) {
   int widest = 0;
-  for (const auto &r : d.rooms) widest = std::max(widest, text_width(r.name, m.text));
+  for (const auto &r : d.rooms) widest = std::max(widest, text_width(roomy::plain(r.name), m.text));
   const int need = widest + line_of(m.icons) + ui::px(8) + 2 * ui::px(14);
   for (int c = static_cast<int>(d.rooms.size()); c > 1; --c) if (c != 3 && (w - (c - 1) * ui::px(8)) / c >= need) return c;
   return 1;
@@ -461,7 +461,7 @@ inline void chips(const Tile &t, const Data &d, int x, int y, int w, const Metri
     glyph(o, room_glyph(d.rooms[i].icon, m.icons), ix, (m.chip_h - iw) / 2, m.icons, theme::hex(theme::MUTED));
     auto *disc = detail_shape(o, ix, (m.chip_h - iw) / 2, iw, iw, theme::ON_ACCENT, iw / 2);
     detail_text(disc, "", 0, (iw - line_of(m.small)) / 2, iw, m.small, LV_TEXT_ALIGN_CENTER, theme::ACCENT);
-    detail_text(o, d.rooms[i].name, ix + iw + ui::px(8), (m.chip_h - line_of(m.text)) / 2, cw - ix - iw - ui::px(8) - ui::px(10), m.text, LV_TEXT_ALIGN_LEFT, theme::INK);
+    detail_text(o, roomy::plain(d.rooms[i].name), ix + iw + ui::px(8), (m.chip_h - line_of(m.text)) / 2, cw - ix - iw - ui::px(8) - ui::px(10), m.text, LV_TEXT_ALIGN_LEFT, theme::INK);
     card_bind(o, t, chip_paint, "", static_cast<intptr_t>(i));
   }
 }
@@ -483,7 +483,7 @@ inline void routines(const Data &d, int x, int y, int w, const Metrics &m, size_
     const int disc = ui::px(m.large ? 36 : 28), e = ui::px(12);
     auto *circle = detail_shape(k, e, (m.row_h - disc) / 2, disc, disc, theme::tint(theme::ha::TEAL, 36), disc / 2);
     glyph_centred(circle, ICON_PLAY, 0, 0, disc, disc, m.small_icons, theme::foreground(theme::ha::TEAL));
-    detail_text(k, d.routines[i].name, e + disc + ui::px(12), (m.row_h - line_of(m.text)) / 2, cw - 2 * e - disc - ui::px(12), m.text, LV_TEXT_ALIGN_LEFT, theme::INK);
+    detail_text(k, roomy::plain(d.routines[i].name), e + disc + ui::px(12), (m.row_h - line_of(m.text)) / 2, cw - 2 * e - disc - ui::px(12), m.text, LV_TEXT_ALIGN_LEFT, theme::INK);
   }
 }
 // The media library's pager: a round key either side, a dot per page between them.
@@ -715,7 +715,7 @@ inline void rooms_view(const Tile &t, const Metrics &m, int x, int y, int w, int
   const auto list = vacuum_model::on_floor(*d, floor);
   const int n = static_cast<int>(list.size()), fh = floors ? m.chip_h + g : 0;
   int widest = 0;
-  for (uint8_t i : list) widest = std::max(widest, text_width(d->rooms[i].name, m.text));
+  for (uint8_t i : list) widest = std::max(widest, text_width(roomy::plain(d->rooms[i].name), m.text));
   const int disc = ui::px(m.large ? 52 : 36), tall = ui::px(18) + disc + ui::px(10) + line_of(m.text) + ui::px(18);
   const bool tight = h < ui::mm(40);  // low glass: no hint, and the pager's keys sit either side of Start
   const int hint = tight ? 0 : line_of(m.small) + ui::px(14), below = ui::px(10) + hint + m.action_h;
@@ -744,7 +744,7 @@ inline void rooms_view(const Tile &t, const Metrics &m, int x, int y, int w, int
     const int fw = std::max(gw, std::min(cw, ui::px(420)));
     // The floors as the lite card's chips: one track, the chosen one blue.
     Choice row; row.kind = 'f';
-    for (size_t i = 0; i < d->floors.size(); ++i) { row.values.push_back(std::to_string(i)); row.labels.push_back(d->floors[i].empty() ? "?" : d->floors[i]); }
+    for (size_t i = 0; i < d->floors.size(); ++i) { row.values.push_back(std::to_string(i)); row.labels.push_back(d->floors[i].empty() ? std::string("?") : roomy::plain(d->floors[i])); }
     segments(x + (w - fw) / 2, cy, fw, m.chip_h, row.labels, floor, CMD_FLOOR, theme::hex(theme::TRACK), false, m.text, small_font);
     cy += fh;
   }
@@ -765,8 +765,8 @@ inline void rooms_view(const Tile &t, const Metrics &m, int x, int y, int w, int
     lv_obj_align(g1, LV_ALIGN_CENTER, 0, 0);
     auto *num = detail_text(c, "", 0, (dd - line_of(number_font)) / 2, dd, number_font, LV_TEXT_ALIGN_CENTER, theme::ON_ACCENT);
     (void) num;
-    if (gr.up) detail_text(o, d->rooms[i].name, ui::px(6), dy + dd + ui::px(10), gr.tw - ui::px(12), m.text, LV_TEXT_ALIGN_CENTER, theme::INK);
-    else detail_text(o, d->rooms[i].name, dx + dd + ui::px(10), (th - line_of(m.text)) / 2, gr.tw - dx - dd - ui::px(20), m.text, LV_TEXT_ALIGN_LEFT, theme::INK);
+    if (gr.up) detail_text(o, roomy::plain(d->rooms[i].name), ui::px(6), dy + dd + ui::px(10), gr.tw - ui::px(12), m.text, LV_TEXT_ALIGN_CENTER, theme::INK);
+    else detail_text(o, roomy::plain(d->rooms[i].name), dx + dd + ui::px(10), (th - line_of(m.text)) / 2, gr.tw - dx - dd - ui::px(20), m.text, LV_TEXT_ALIGN_LEFT, theme::INK);
     card_bind(o, t, tile_paint, "", i);
   }
   cy += gh;
@@ -798,7 +798,7 @@ inline void routines_view(const Tile &t, const Metrics &m, int x, int y, int w, 
   if (!d) return;
   const int n = static_cast<int>(d->routines.size());
   int widest = 0;
-  for (const auto &r : d->routines) widest = std::max(widest, text_width(r.name, m.text));
+  for (const auto &r : d->routines) widest = std::max(widest, text_width(roomy::plain(r.name), m.text));
   const int row_need = 2 * ui::px(12) + ui::px(m.large ? 36 : 28) + ui::px(12) + widest + ui::px(8);
   const int cw = std::min(w, ui::control_max_width() * 4 / 3);
   const int cols = n > 4 && cw >= 2 * std::max(row_need, ui::mm(55)) + m.gap ? 2 : 1;
@@ -826,7 +826,7 @@ inline void how_view(const Tile &t, const Metrics &m, int x, int y, int w, int h
 // ---- The card ----
 inline uint32_t card_shape(const Tile &t) {
   Fingerprint f;
-  auto add = [&](const std::string &text) { f.add(text); f.write('|'); };
+  auto add = [&](std::string_view text) { f.add(text); f.write('|'); };
   add(t.entity); add(std::to_string(t.supported)); add(t.state); f.write(static_cast<uint8_t>('0' + view));
   add(std::to_string(floor)); add(std::to_string(page));
   add(std::isfinite(t.battery) ? std::to_string(static_cast<int>(std::lround(t.battery))) : "");
@@ -922,7 +922,7 @@ void command(Tile &t, int cmd) {
   }
   if (!t.available() || t.waiting(now)) return;
   if (cmd >= CMD_ROUTINE && cmd < CMD_ROUTINE + static_cast<int>(vacuum_model::MAX_ROUTINES)) {
-    if (d && cmd - CMD_ROUTINE < static_cast<int>(d->routines.size())) action("button.press", d->routines[cmd - CMD_ROUTINE].entity);
+    if (d && cmd - CMD_ROUTINE < static_cast<int>(d->routines.size())) action("button.press", roomy::plain(d->routines[cmd - CMD_ROUTINE].entity));
     return;
   }
   if (cmd == CMD_LOCATE) { action("vacuum.locate", t.entity); return; }

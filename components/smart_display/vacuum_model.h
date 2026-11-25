@@ -13,26 +13,29 @@
 #include <cmath>
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
+#include "roomy.h"
 #include "tile_catalogue.h"
 
 namespace vacuum_model {
 
 constexpr size_t MAX_ROOMS = 24, MAX_FLOORS = 6, MAX_ROUTINES = 24;
 
+// What the card keeps takes PSRAM first (roomy.h); the shared block too (page_receiver.cpp).
 struct Room {
-  std::string area, name;
+  roomy::Text area, name;
   uint32_t icon = 0;   // the area's icon as a codepoint, 0 for none (the card draws Home Assistant's area icon then)
   uint8_t floor = 0;   // index into Data::floors
 };
-struct Routine { std::string entity, name; };
+struct Routine { roomy::Text entity, name; };
 struct Data {
-  std::string map_entity, map_mark;
-  std::vector<Room> rooms;
-  std::vector<std::string> floors;
+  roomy::Text map_entity, map_mark;
+  roomy::List<Room> rooms;
+  roomy::List<roomy::Text> floors;
   bool unmapped = false;
-  std::vector<Routine> routines;
-  std::string error;
+  roomy::List<Routine> routines;
+  roomy::Text error;
   int progress = -1;       // 0-100 while cleaning, -1 unknown
   float area = NAN;        // m² this run
   bool has_map() const { return !map_entity.empty() && !map_mark.empty(); }
@@ -97,7 +100,7 @@ inline void keep_valid(std::vector<uint8_t> &picked, size_t rooms) {
 }
 // The value of vacuum.clean_area's cleaning_area_id, which Home Assistant renders from a template into a list:
 // "{{ ['kitchen', 'living_room'] }}". Area ids are Home Assistant's slugs; anything else is left out.
-inline bool area_id(const std::string &id) {
+inline bool area_id(std::string_view id) {
   if (id.empty() || id.size() > 40) return false;
   for (char c : id) if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-')) return false;
   return true;
@@ -107,7 +110,9 @@ inline std::string areas_template(const Data &d, const std::vector<uint8_t> &pic
   bool first = true;
   for (uint8_t r : picked) {
     if (r >= d.rooms.size() || !area_id(d.rooms[r].area)) continue;
-    out += (first ? "'" : ", '") + d.rooms[r].area + "'";
+    out += first ? "'" : ", '";
+    out.append(d.rooms[r].area.data(), d.rooms[r].area.size());
+    out += '\'';
     first = false;
   }
   return first ? std::string() : out + "] }}";

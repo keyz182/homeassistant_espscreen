@@ -112,7 +112,7 @@ static const char *key_icon(Key k) {
 static std::string state_words(const Tile &t, const View &v) {
   const auto *d = v.data.get();
   // Why it stopped where the robot says, else Home Assistant's word.
-  if (t.state == "error" && d && !d->error.empty()) return d->error;
+  if (t.state == "error" && d && !d->error.empty()) return roomy::plain(d->error);
   std::string words = vacuum_badge_text(t);
   // The room it is in, where no map shows it with its chip.
   if (t.state == "cleaning" && !t.extra().room.empty() && v.plan.map.empty()) words += "  ·  " + t.extra().room;
@@ -246,7 +246,7 @@ static void draw_over(lv_event_t *e) {
     pen.box(p, pressed(at ? accent : card, down), l.tile_radius);
     const int il = lv_font_get_line_height(face(room_icon)), y = p.y + (p.h - il - sh) / 2;
     pen.glyph(room_icon, room_glyph(d->rooms[p.index].icon), {p.x, y, p.w, il}, at ? on_accent : slate);
-    pen.text(vt::SMALL, fit(vt::SMALL, d->rooms[p.index].name, p.w - 2 * ui::px(6)), p.x + ui::px(6), y + il, p.w - 2 * ui::px(6), at ? on_accent : ink, LV_TEXT_ALIGN_CENTER);
+    pen.text(vt::SMALL, fit(vt::SMALL, roomy::plain(d->rooms[p.index].name), p.w - 2 * ui::px(6)), p.x + ui::px(6), y + il, p.w - 2 * ui::px(6), at ? on_accent : ink, LV_TEXT_ALIGN_CENTER);
     if (at) {
       const int n = sh + ui::px(2);
       const vt::Box disc{p.x + p.w - n - ui::px(5), p.y + ui::px(5), n, n};
@@ -279,7 +279,7 @@ static void draw_over(lv_event_t *e) {
     pen.box(mark, theme::tint(theme::ha::TEAL, 36), disc / 2);
     pen.glyph(vt::WATCH_ICON, PLAY, mark, theme::foreground(theme::ha::TEAL));
     const int tx = mark.x + disc + ui::px(10);
-    pen.text(vt::SMALL, fit(vt::SMALL, d->routines[p.index].name, p.x + p.w - tx - ui::px(6)), tx, p.y + (p.h - sh) / 2, p.x + p.w - tx - ui::px(6), ink);
+    pen.text(vt::SMALL, fit(vt::SMALL, roomy::plain(d->routines[p.index].name), p.x + p.w - tx - ui::px(6)), tx, p.y + (p.h - sh) / 2, p.x + p.w - tx - ui::px(6), ink);
   }
   if (!l.routines_more.empty()) {
     const bool down = v->pressed.kind == vt::HIT_MORE && v->pressed.arg == 1;
@@ -399,8 +399,8 @@ static void replan(Widgets &w, const Tile &t, int width, int height) {
   in.width = width;
   in.height = height;
   if (d) {
-    for (const auto &r : d->rooms) in.rooms.push_back(r.name);
-    for (const auto &r : d->routines) in.routines.push_back(r.name);
+    for (const auto &r : d->rooms) in.rooms.push_back(roomy::plain(r.name));
+    for (const auto &r : d->routines) in.routines.push_back(roomy::plain(r.name));
   }
   // Cleaning per room only where the robot can (Home Assistant's CLEAN_AREA).
   if (!can_of(t).by_area) in.rooms.clear();
@@ -530,7 +530,7 @@ bool card_tap(Widgets &w, const Tile &tile) {
       vacuum_model::toggle(v->picks, static_cast<uint8_t>(h.arg));
       break;
     case vt::HIT_ROUTINE:
-      if (d && h.arg < static_cast<int>(d->routines.size())) action("button.press", d->routines[h.arg].entity);
+      if (d && h.arg < static_cast<int>(d->routines.size())) action("button.press", roomy::plain(d->routines[h.arg].entity));
       break;
     case vt::HIT_MODE:
       if (Choice *mode = const_cast<Choice *>(t.choice('m'))) if (h.arg < static_cast<int>(mode->values.size())) choose(t, *mode, mode->values[h.arg]);

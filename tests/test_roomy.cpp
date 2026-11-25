@@ -45,6 +45,16 @@ int main() {
   raw = static_cast<char *>(roomy::reallocate(raw, 4096));
   assert(raw && raw[15] == 15);
   roomy::release(raw);
+  // A shared object made in one block, its own members of Text and List, shared and released as make_shared's.
+  struct Card { roomy::Text name; roomy::List<int> rooms; };
+  std::shared_ptr<Card> card = roomy::make<Card>();
+  assert(card && card->name.empty() && card->rooms.empty());
+  card->name = "Hall";
+  card->rooms.assign(30, 7);
+  std::shared_ptr<const Card> held = card;
+  assert(card.use_count() == 2 && held->name == "Hall" && held->rooms[29] == 7);
+  card.reset();
+  assert(held.use_count() == 1 && held->rooms.size() == 30);
   std::puts("test_roomy: ok");
   return 0;
 }

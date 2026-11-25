@@ -58,7 +58,7 @@ int main() {
   // Floors: one floor shows every room; two show a floor at a time.
   Data two;
   two.floors = {"Ground floor", "First floor"};
-  for (int i = 0; i < 10; ++i) two.rooms.push_back({"r" + std::to_string(i), "Room", 0, static_cast<uint8_t>(i < 5 ? 0 : 1)});
+  for (int i = 0; i < 10; ++i) two.rooms.push_back({roomy::text("r" + std::to_string(i)), "Room", 0, static_cast<uint8_t>(i < 5 ? 0 : 1)});
   assert(on_floor(two, 0).size() == 5 && on_floor(two, 1).size() == 5 && on_floor(two, 1)[0] == 5);
   Data one = two;
   one.floors.clear();

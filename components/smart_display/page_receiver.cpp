@@ -922,7 +922,7 @@ std::string receive(const std::string &payload) {
     // A light's presets (module light_presets): at most four, as the app keeps them; one the screen cannot take is left out.
     tile.presets.reset();
     if (tile.domain() == "light" && options["presets"].is<JsonArray>()) {
-      auto ps = std::make_shared<light_presets::Presets>();
+      auto ps = roomy::make<light_presets::Presets>();  // the block in PSRAM first, its texts too (roomy.h)
       for (JsonVariant p : options["presets"].as<JsonArray>()) {
         if (ps->count == light_presets::MAX) break;
         auto preset = light_presets::make(p["b"] | 0, p["k"] | 0, p["h"] | -1, p["s"] | -1, !p["k"].isNull(), !p["h"].isNull());
@@ -931,8 +931,9 @@ std::string receive(const std::string &payload) {
         if (p["rw"].is<JsonArray>()) for (JsonVariant pair : p["rw"].as<JsonArray>()) {
           if (preset.settings.size() == 4) break;
           light_presets::Setting s;
-          s.entity = string(pair[0], 120);
-          if (!valid_entity(s.entity) || (s.entity.rfind("select.", 0) != 0 && s.entity.rfind("number.", 0) != 0)) continue;
+          const std::string entity = string(pair[0], 120);
+          if (!valid_entity(entity) || (entity.rfind("select.", 0) != 0 && entity.rfind("number.", 0) != 0)) continue;
+          s.entity = entity;
           if (s.entity[0] == 'n') {
             if (!pair[1].is<float>()) continue;
             s.number = pair[1].as<float>();
@@ -1469,15 +1470,15 @@ std::string receive(const std::string &payload) {
     // linked to its segments with their icons and floors, its routines, and why it stopped or how far it is.
     if (tile.domain() == "vacuum" && extra["vc"].is<JsonObject>()) {
       JsonVariant c = extra["vc"];
-      auto d = std::make_shared<vacuum_model::Data>();
+      auto d = roomy::make<vacuum_model::Data>();
       if (c["map"].is<JsonObject>()) {
-        d->map_entity = string(c["map"]["e"], 120);
-        if (!valid_entity(d->map_entity)) d->map_entity.clear();
+        const std::string map = string(c["map"]["e"], 120);
+        if (valid_entity(map)) d->map_entity = map;
         d->map_mark = string(c["map"]["m"], 40);
       }
       if (c["floors"].is<JsonArray>()) for (JsonVariant f : c["floors"].as<JsonArray>()) {
         if (d->floors.size() == vacuum_model::MAX_FLOORS) break;
-        d->floors.push_back(string(f, 24));
+        d->floors.push_back(roomy::text(string(f, 24)));
       }
       if (c["rooms"].is<JsonArray>()) for (JsonVariant r : c["rooms"].as<JsonArray>()) {
         if (d->rooms.size() == vacuum_model::MAX_ROOMS) break;
@@ -1493,8 +1494,9 @@ std::string receive(const std::string &payload) {
       d->unmapped = c["unmapped"].is<int>() && c["unmapped"].as<int>() == 1;
       if (c["rt"].is<JsonArray>()) for (JsonVariant r : c["rt"].as<JsonArray>()) {
         if (d->routines.size() == vacuum_model::MAX_ROUTINES) break;
-        vacuum_model::Routine routine{string(r[0], 120), string(r[1], 32)};
-        if (routine.entity.rfind("button.", 0) == 0 && valid_entity(routine.entity)) d->routines.push_back(std::move(routine));
+        const std::string entity = string(r[0], 120);
+        if (entity.rfind("button.", 0) == 0 && valid_entity(entity))
+          d->routines.push_back({roomy::text(entity), roomy::text(string(r[1], 32))});
       }
       d->error = string(c["err"], 48);
       d->progress = c["pg"].is<int>() ? std::clamp(c["pg"].as<int>(), 0, 100) : -1;
