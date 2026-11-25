@@ -117,9 +117,9 @@ inline void covers_gone_by() {
     if (!e.buffer || e.retired || e.key.compare(0, 6, "cover|") != 0) continue;
     const size_t mark_at = e.key.find('|', 6), mark_end = mark_at == std::string::npos ? mark_at : e.key.find('|', mark_at + 1);
     if (mark_end == std::string::npos) continue;
-    const std::string entity = e.key.substr(6, mark_at - 6), mark = e.key.substr(mark_at + 1, mark_end - mark_at - 1);
+    const std::string_view key(e.key), entity = key.substr(6, mark_at - 6), mark = key.substr(mark_at + 1, mark_end - mark_at - 1);
     bool playing = false;
-    for (size_t i = 0; i < model.count && !playing; ++i) playing = model.tiles[i].entity == entity && model.tiles[i].extra().media_picture == mark;
+    for (size_t i = 0; i < model.count && !playing; ++i) playing = roomy::same(model.tiles[i].entity, entity) && roomy::same(model.tiles[i].extra().media_picture, mark);
     if (!playing) e.retired = true;
   }
 }
@@ -134,7 +134,7 @@ inline void pictures_collect() {
     ++count;
     retired += e.retired;
     if (!kinds.empty()) kinds += ' ';
-    kinds += e.key.substr(0, e.key.find('|'));
+    kinds += std::string_view(e.key).substr(0, e.key.find('|'));
   }
   const size_t bytes = pictures.size();
   if (bytes == pictures_logged_bytes && count == pictures_logged_count) return;
@@ -148,7 +148,7 @@ inline picture_store::Cap picture_cap() { return picture_store::cap_for(pictures
 inline bool picture_kept_here(const lv_image_dsc_t *image) { return !pictures_kept() || pictures.holder(image) != nullptr; }
 // A cover no card wants any more (a track gone by): it goes at the next collect once nothing draws it, so the covers of
 // a long evening's tracks never fill the store (firmware 0.52.0, GitHub #177).
-inline void picture_retire(const std::string &key) { if (pictures_kept() && !key.empty()) pictures.retire(key); }
+inline void picture_retire(std::string_view key) { if (pictures_kept() && !key.empty()) pictures.retire(key); }
 
 // ---- One route for every picture (firmware 0.52.0, picture_loader.h) ----
 // Each picture on the glass says what it wants, every round (pictures_round, from camera_tick and after every answer
@@ -221,7 +221,7 @@ inline ImageHooks &slot_hooks(picture_loader::Slot slot) {
 inline std::array<std::string, 3> slot_key{};
 inline std::array<uint32_t, 3> slot_at{};
 // The picture for `key`: the store's copy, or the download that holds it.
-inline lv_image_dsc_t *picture_of(const std::string &key) {
+inline lv_image_dsc_t *picture_of(std::string_view key) {
   if (key.empty()) return nullptr;
   if (pictures_kept()) if (auto *kept = pictures.find(key)) return kept;
   for (int s = 0; s < 3; ++s) {
@@ -237,10 +237,12 @@ inline lv_image_dsc_t *picture_of(const std::string &key) {
 // The media card, or a media tile over the whole page, wants the cover of what plays (CoverAsk). The app answers
 // `esphome.screen_camera` with a link to a BMP of exactly that (op "camera", t "cover"). A cover is the same picture as
 // long as the player, its picture's mark, the size and the colour behind its corners are.
-inline std::string cover_key(const std::string &entity, const std::string &mark, int size, uint32_t background) {
+inline std::string cover_key(std::string_view entity, std::string_view mark, int size, uint32_t background) {
   char tail[24];
   snprintf(tail, sizeof(tail), "|%d|%06X", size, (unsigned) background);
-  return "cover|" + entity + "|" + mark + tail;
+  std::string key = "cover|";
+  key.append(entity).append(1, '|').append(mark).append(tail);
+  return key;
 }
 inline std::string cover_key(const CoverAsk &c) { return cover_key(c.entity, c.mark, c.size, c.ground); }
 inline std::string cover_key(const Widgets &w) { return cover_key(w.cover_entity, w.cover_mark, w.cover_size, w.cover_ground); }

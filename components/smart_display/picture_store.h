@@ -20,6 +20,9 @@
 #include <cstring>
 #include <functional>
 #include <string>
+#include <string_view>
+
+#include "roomy.h"
 
 namespace picture_store {
 // One place per picture a screen may hold at once: every tile's own picture (tile_picture.h) on the glass and on the
@@ -74,13 +77,13 @@ inline int scaled(int value, int scale) { return static_cast<int>(static_cast<in
 
 template <class Image> struct Store {
   struct Entry {
-    std::string key;
+    roomy::Text key;         // the store's strings live in PSRAM on a board that has it, with the pictures
     Image image{};
     void *buffer = nullptr;
     size_t bytes = 0;
     uint32_t stored_at = 0, used = 0;
     bool retired = false;    // replaced by a copy of another size; freed once no card shows it
-    std::string etag;        // the app's ETag of these bytes, so its owner's next link may come back 304
+    roomy::Text etag;        // the app's ETag of these bytes, so its owner's next link may come back 304
   };
   std::array<Entry, ENTRIES> entries{};
   std::function<void(void *)> release;
@@ -96,20 +99,20 @@ template <class Image> struct Store {
     for (const auto &e : entries) total += e.bytes;
     return total;
   }
-  Entry *entry(const std::string &key) {
+  Entry *entry(std::string_view key) {
     if (key.empty()) return nullptr;
-    for (auto &e : entries) if (e.buffer && !e.retired && e.key == key) return &e;
+    for (auto &e : entries) if (e.buffer && !e.retired && roomy::same(e.key, key)) return &e;
     return nullptr;
   }
   // Also a retired copy (one whose owner moved on but whose card may still draw it): the picture an owner had before.
-  Entry *entry_any(const std::string &key) {
+  Entry *entry_any(std::string_view key) {
     if (Entry *e = entry(key)) return e;
     if (key.empty()) return nullptr;
-    for (auto &e : entries) if (e.buffer && e.key == key) return &e;
+    for (auto &e : entries) if (e.buffer && roomy::same(e.key, key)) return &e;
     return nullptr;
   }
   // The kept picture for `key`, or nullptr.
-  Image *find(const std::string &key) {
+  Image *find(std::string_view key) {
     Entry *e = entry(key);
     if (!e) return nullptr;
     e->used = ++uses;
@@ -119,7 +122,7 @@ template <class Image> struct Store {
   // allocated it) and the caller lets go of it. A picture under the same key before it is retired: it stays while a card
   // draws it and goes at the next collect. nullptr when there is no room: the caller keeps its buffer and draws it
   // itself. With every slot taken the picture used longest ago that no card draws makes way (make_room).
-  Image *adopt(const std::string &key, const Image &from, uint32_t now, const std::string &etag = {}) {
+  Image *adopt(std::string_view key, const Image &from, uint32_t now, std::string_view etag = {}) {
     if (!budget || !from.data || !from.data_size || key.empty() || from.data_size > budget) return nullptr;
     Entry *slot = nullptr;
     for (auto &c : entries) if (!c.buffer) { slot = &c; break; }
@@ -138,7 +141,7 @@ template <class Image> struct Store {
   // The same bytes under another key: an owner's new link (another track of the same album) answered 304 to the ETag of
   // the picture it shows (`from`), so that picture is the new key's too. Its pixels stay where they are, so the card on
   // the glass changes nothing. False when `from` is gone or `to` is had already.
-  bool rekey(const std::string &from, const std::string &to, uint32_t now) {
+  bool rekey(std::string_view from, std::string_view to, uint32_t now) {
     Entry *e = entry_any(from);
     if (!e || to.empty() || entry(to)) return false;
     e->key = to; e->stored_at = now; e->used = ++uses; e->retired = false;
@@ -183,12 +186,12 @@ template <class Image> struct Store {
     }
   }
   // The picture for `key` is the same as before (the app answered 304): kept as it is, as fresh as a new one.
-  void touch(const std::string &key, uint32_t now) {
+  void touch(std::string_view key, uint32_t now) {
     if (Entry *e = entry(key)) { e->stored_at = now; e->used = ++uses; }
   }
   // The picture for `key` is no longer wanted (the camera full screen closed): it goes at the next collect once nothing
   // draws it, before any picture that is still wanted.
-  void retire(const std::string &key) {
+  void retire(std::string_view key) {
     if (Entry *e = entry(key)) { e->retired = true; note("retires", *e); }
   }
   // The entry whose copy this is, also one already replaced (a card may still draw it), or nullptr.

@@ -238,7 +238,7 @@ inline void tile_picture_want(Widgets &w, bool glass) {
   tile_picture::Ask a;
   if (!tile_ask(w, t, a)) { w.art_key.clear(); return; }
   const std::string key = tile_picture::key(a);
-  if (key != w.art_key) {
+  if (!roomy::same(key, w.art_key)) {
     w.art_key = key;
     if (picture_of(key) && !draws(w.picture, picture_of(key))) refresh_tile(w.index, redraw_log::TileWhy::picture);
   }
@@ -290,9 +290,9 @@ inline void card_picture_wants() {
     // A slot keeps the parts of the media card it drew last while it shows another tile (hide_extra), so the card's
     // cover is only this tile's while those parts are on it: a cover or camera tile in that slot asks for its own.
     if (w.extra_mode == "media" && !w.cover_entity.empty() && w.extra && !lv_obj_has_flag(w.extra, LV_OBJ_FLAG_HIDDEN)) {
-      if (t.entity != w.cover_entity || t.extra().media_picture != w.cover_mark) return;
+      if (!roomy::same(t.entity, w.cover_entity) || !roomy::same(t.extra().media_picture, w.cover_mark)) return;
       const size_t index = w.index;
-      loader.want(owners::tile(index), cover_picture({w.cover_entity, w.cover_mark, w.cover_size, w.cover_ground},
+      loader.want(owners::tile(index), cover_picture({roomy::plain(w.cover_entity), roomy::plain(w.cover_mark), w.cover_size, w.cover_ground},
                                                      glass ? picture_loader::Rank::PAGE : picture_loader::Rank::AHEAD,
                                                      [index](picture_loader::Outcome o) { if (shows(o)) tile_cover_arrived(index); }));
     } else if (tiles && pictured) {

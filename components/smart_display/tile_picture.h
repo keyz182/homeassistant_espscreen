@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 #include "picture_question.h"
@@ -140,19 +141,20 @@ inline std::string place(const Ask &a) {
 }
 inline std::string key(const Ask &a) { return place(a) + a.mark; }
 // A key's place: everything before its mark ("" for no tile picture's key).
-inline std::string place_of(const std::string &key) {
+inline std::string place_of(std::string_view key) {
   size_t at = 0;
   for (int bars = 0; bars < 6; ++bars) {
     at = key.find('|', at);
     if (at == std::string::npos) return {};
     ++at;
   }
-  return key.compare(0, 5, "tile|") == 0 ? key.substr(0, at) : std::string();
+  return key.compare(0, 5, "tile|") == 0 ? std::string(key.substr(0, at)) : std::string();
 }
 // Whether a key is of this tile showing this entity (a card on a screen without kept pages shows another tile on the
 // next page, and keeps the key it had until the next round).
-inline bool belongs(const std::string &key, size_t index, const std::string &entity) {
-  const std::string head = "tile|" + std::to_string(index) + "|" + entity + "|";
+inline bool belongs(std::string_view key, size_t index, std::string_view entity) {
+  std::string head = "tile|" + std::to_string(index) + "|";
+  head.append(entity).append(1, '|');
   return key.size() > head.size() && key.compare(0, head.size(), head) == 0;
 }
 // The loader's tag for a tile's question: one per tile, so the tiles of a page are asked for together.

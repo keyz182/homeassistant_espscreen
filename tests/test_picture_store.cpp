@@ -121,7 +121,7 @@ int main() {
     const std::string key = "live|a|" + std::to_string(move);
     Image *moved = store.adopt(key, download(uint8_t(move), 10, 5), 10 + move);
     assert(moved);                                      // always a place for the next one
-    store.retire_if([&](const auto &e) { return e.key != key && e.key.rfind("live|a|", 0) == 0; });
+    store.retire_if([&](const auto &e) { return !roomy::same(e.key, key) && e.key.rfind("live|a|", 0) == 0; });
     shown = {moved};
     store.collect(on_card);
     assert(live == 1);

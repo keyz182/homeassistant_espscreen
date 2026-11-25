@@ -473,8 +473,8 @@ inline void camera_link_now(const std::string &url);
 inline bool camera_supported();
 // Every picture goes one way (picture_loader.h; see the end of this file): an owner says what it wants, and draws what
 // picture_of() has for its key.
-inline lv_image_dsc_t *picture_of(const std::string &key);
-inline std::string cover_key(const std::string &entity, const std::string &mark, int size, uint32_t background);
+inline lv_image_dsc_t *picture_of(std::string_view key);
+inline std::string cover_key(std::string_view entity, std::string_view mark, int size, uint32_t background);
 // The cover a media card or tile wants: the player, the mark of its picture, the size and the colour behind the rounded
 // corners, which the app bakes in.
 struct CoverAsk {
@@ -489,7 +489,7 @@ inline bool pictures_kept();
 // Whether the store still holds this picture (a board without the store: always), and a cover no card wants any more
 // (both with the store, further down).
 inline bool picture_kept_here(const lv_image_dsc_t *image);
-inline void picture_retire(const std::string &key);
+inline void picture_retire(std::string_view key);
 inline bool picture_shown(const lv_image_dsc_t *image);
 struct Widgets;
 // The card's cover on screen, and the part a media tile keeps its cover in; both go with the image buffer.
@@ -697,13 +697,13 @@ struct Widgets {
   lv_obj_t *picture{};
   // The picture the tile's last round asked for (tile_picture::key, card_picture_wants), "" for none, and the place its
   // card gave it when it was drawn (the icon's circle of art_size at art_x, art_y; 0 for the whole card).
-  std::string art_key; int art_size=0, art_x=0, art_y=0;
+  roomy::Text art_key; int art_size=0, art_x=0, art_y=0;  // roomy: a page's keys go to PSRAM on a board that has it
   // The album cover a media card over the whole page shows (firmware 0.3.2+): the player, its picture's mark, the size
   // and colour asked for and where it goes on the card, so a kept page can have it fetched ahead and put on the card.
-  std::string cover_entity, cover_mark; int cover_size=0; uint32_t cover_ground=0; media_card::Rect cover_rect{};
+  roomy::Text cover_entity, cover_mark; int cover_size=0; uint32_t cover_ground=0; media_card::Rect cover_rect{};
   // The cover the card shows (its cover_key, "" for none), and until when it keeps that cover while the next one is on
   // its way (firmware 0.52.0; 0: it keeps none).
-  std::string cover_shown; uint32_t cover_hold=0;
+  roomy::Text cover_shown; uint32_t cover_hold=0;
   bool media_live=false;  // the media card shows "Live" for a stream (media_live), drawn again when that changes
   // The energy card's scene and running dots (firmware 0.47.0+, energy_view.cpp); it goes with the card's extra layer.
   energy_view::View *energy{};
