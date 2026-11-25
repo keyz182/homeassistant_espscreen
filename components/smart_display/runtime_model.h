@@ -518,6 +518,11 @@ template<class From> inline ExtraPtr make_extra(From &&from) {
   Extra *block = extra_block();
   return ExtraPtr(block ? new (block) Extra(std::forward<From>(from)) : nullptr);
 }
+// An empty block, built where it lives: no Extra of about 1.3 KB passes through the loop task's stack on the way.
+inline ExtraPtr make_extra() {
+  Extra *block = extra_block();
+  return ExtraPtr(block ? new (block) Extra() : nullptr);
+}
 struct ExtraBox {
   ExtraPtr ptr;
   ExtraBox() = default;
@@ -673,10 +678,12 @@ struct Tile {
   // The block to change, made when the tile has none; without memory for one, a scratch block nobody reads, so the
   // change is lost instead of the screen.
   Extra &edit_extra() {
-    if (!extra_box.ptr) extra_box.ptr = make_extra(Extra());
+    if (!extra_box.ptr) extra_box.ptr = make_extra();
     if (extra_box.ptr) return *extra_box.ptr;
+    // Emptied in place, its strings and lists freed, with no temporary Extra on the stack.
     static Extra scratch;
-    scratch = Extra();
+    scratch.~Extra();
+    new (&scratch) Extra();
     return scratch;
   }
   // A state message's extras replace the block: it stays allocated while the tile needs one and is freed
@@ -686,6 +693,8 @@ struct Tile {
     else if (extra_box.ptr) *extra_box.ptr = std::move(next);
     else if (room) extra_box.ptr = make_extra(std::move(next));
   }
+  // Lets go of the block, as set_extra(Extra()) does, without an empty Extra of about 1.3 KB on the caller's stack.
+  void drop_extra() { extra_box.ptr.reset(); }
   Choice *choice(char kind) { return extra_box.ptr ? extra_box.ptr->choice(kind) : nullptr; }
   const Choice *choice(char kind) const { for (auto &c : extra().choices) if (c.kind == kind) return &c; return nullptr; }
   bool is_switch() const { return domain()=="switch" || domain()=="input_boolean" || domain()=="automation"; }

@@ -1003,8 +1003,9 @@ std::string receive(const std::string &payload) {
     JsonVariant extra = lean ? JsonVariant() : root["x"].as<JsonVariant>();
     // The tile's extras as this message has them live on the heap, not in this frame: 1,284 bytes on a P4 that would
     // otherwise stay on the loop task's stack under everything the tile then redraws (a group page's blinds, the open
-    // card). docs/ARCHITECTURE.md, "The loop's stack".
-    std::unique_ptr<Extra> next_held(new (std::nothrow) Extra());
+    // card). docs/ARCHITECTURE.md, "The loop's stack". The block comes from the Extra's own allocator, PSRAM first where
+    // the board has it, so a burst of states does not take internal RAM that Wi-Fi needs.
+    ExtraPtr next_held = make_extra();
     if (!next_held) { result = "Error: no memory for " + entity; return false; }
     Extra &next = *next_held;
     // A tap's own Home Assistant action (app 0.2.67+): {"s": action, "d": [[key, text]], "t": [[key, template]]}.

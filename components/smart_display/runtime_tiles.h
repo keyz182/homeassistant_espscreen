@@ -3712,7 +3712,7 @@ inline void shed_extras() {
   for (const auto &w : widgets) if (w.tile && w.index < shown.size()) shown.set(w.index);
   size_t freed = 0;
   for (size_t i = 0; i < model.count && i < model.tiles.size(); ++i)
-    if (!shown.test(i) && model.tiles[i].extra_ptr()) { model.tiles[i].set_extra(Extra()); ++freed; }
+    if (!shown.test(i) && model.tiles[i].extra_ptr()) { model.tiles[i].drop_extra(); ++freed; }
   ESP_LOGW("memory", "short of memory: %u tiles off the glass let go of their extras, %u B free", (unsigned) freed,
            (unsigned) (heap_room ? heap_room() : 0));
 }

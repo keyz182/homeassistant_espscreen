@@ -333,6 +333,27 @@ static void test_extras_without_memory() {
   assert(!t.extra_ptr());
 }
 struct RunExtrasWithoutMemory { RunExtrasWithoutMemory() { test_extras_without_memory(); } } run_extras_without_memory;
+// The scratch block is emptied in place each time it is handed out: what one tile wrote there while memory was short
+// never reaches the next, and no tile ever owns it.
+static void test_scratch_extra_is_emptied() {
+  using namespace runtime_tiles;
+  layout_memory::allocation_allowed = [](size_t bytes) { return bytes != sizeof(Extra); };
+  Tile a, b;
+  Extra &first = a.edit_extra();
+  first.fan_mode = "a text long enough to leave the small-string buffer behind";
+  first.forecast.emplace_back();
+  assert(!a.extra_ptr());
+  Extra &second = b.edit_extra();
+  assert(&second == &first);
+  assert(second.fan_mode.empty() && second.forecast.empty());
+  assert(!a.extra_ptr() && !b.extra_ptr());
+  layout_memory::allocation_allowed = nullptr;
+  Extra &own = b.edit_extra();
+  assert(b.extra_ptr() == &own && &own != &first && own.fan_mode.empty());
+  b.drop_extra();
+  assert(!b.extra_ptr());
+}
+struct RunScratchExtraIsEmptied { RunScratchExtraIsEmptied() { test_scratch_extra_is_emptied(); } } run_scratch_extra_is_emptied;
 // Clock texts without sscanf (firmware 0.2.75+): the same answers the sscanf versions gave.
 static void test_clock_texts() {
   using namespace runtime_tiles;

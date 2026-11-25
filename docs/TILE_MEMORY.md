@@ -126,6 +126,10 @@ beside its memory bar.
 
 The extras of a tile live in PSRAM on a board that has it (ESPHome's `RAMAllocator`, PSRAM first), as the tile list
 does. That alone took about a kilobyte per tile of weather, media or climate out of the memory inside the chip.
+A block is built in its place (`make_extra()`, `Tile::drop_extra()`), never as an empty `Extra` on the loop's stack
+first: that took `Tile::edit_extra` and `shed_extras` from about 1.3 KB of stack each to 48 to 64 bytes, and a state's
+new extras now go straight to PSRAM instead of inside the chip (measured with `tools/stack_chains.py` on ESPHome
+2026.9.0, on a CYD, a Guition, a Waveshare 7 and a JC8012P4A1).
 
 A plugin tile keeps its options and data (`Extra::plugin_options`, `plugin_state`, up to 2.6 KB of data each) in PSRAM
 too, and so do the documents the plugin host parses them into, the plugin's own objects (`tessera::Tile`,
