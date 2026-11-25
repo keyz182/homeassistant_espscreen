@@ -28,7 +28,7 @@ inline lv_obj_t *lock_ring=nullptr;
 inline lock_panel::Lock lock_of(const Tile &t){
   lock_panel::Lock l;l.state=t.state;l.supported=t.supported;l.assumed=t.extra().assumed;l.available=t.available()&&fresh();return l;
 }
-inline lock_panel::Guard lock_guard(const Tile &t){return lock_panel::guard_of(t.guard);}
+inline lock_panel::Guard lock_guard(const Tile &t){return lock_panel::guard_of(t.guard.c_str());}
 inline bool lock_noting(const Tile &t){return t.noted_at&&esphome::millis()-t.noted_at<3000;}
 inline bool lock_asking(const Tile &t,bool card,lock_panel::Act a=lock_panel::NONE){
   if(t.ask_act<0||t.ask_card!=card)return false;
@@ -169,7 +169,7 @@ inline uint32_t security_card_shape(const Tile &t){
   const uint32_t now=esphome::millis();
   const auto &x=t.extra();
   const auto codes=alarm_codes(t);
-  add(t.entity);add(t.state);add(t.icon);add(t.guard);number(t.send_after);number(t.supported);f.write(t.available());f.write(fresh());
+  add(t.entity);add(t.state);add(t.icon);add(t.guard.c_str());number(t.send_after);number(t.supported);f.write(t.available());f.write(fresh());
   add(codes.format);f.write(codes.arm_required);f.write(codes.saved);f.write(x.assumed);number(x.alarm_end);number(x.alarm_delay);
   f.write(alarm_pad.open);number(alarm_pad.mode);number(alarm_pad.code.size());add(alarm_pad.entity);
   number(alarm_pad.note);f.write(alarm_pad.note&&now-alarm_pad.note_at<4000);number(alarm_pad.shake_at);

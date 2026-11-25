@@ -17,6 +17,7 @@
 #include "calendar_card.h"
 #include "vacuum_model.h"
 #include "roomy.h"
+#include "tile_words.h"
 #ifdef SD_MOD_TEXT_CARD
 #include "module_text_card.h"
 #endif
@@ -543,7 +544,11 @@ struct Tile {
   // A light in a white shade: Home Assistant reports its colour temperature, which it names in no colour mode.
   bool white = false;
   int saturation = 0;
-  std::string tap = "auto", display = "standard", inline_control = "none", guard = "confirm";
+  std::string tap = "auto";  // an open set: a plugin names its own actions
+  // A byte each, a word of a fixed set (tile_words.h); the first word of the set is the default.
+  tile_words::Word<tile_words::Displays> display;
+  tile_words::Word<tile_words::Inlines> inline_control;
+  tile_words::Word<tile_words::Guards> guard;
   // What the second line says (firmware 0.2.90+), as the option was stored: "auto" is the line the screen works
   // out itself, "none" leaves it empty, "text:<words>" says those words, and "attr:<name>" says a value of this
   // entity that Home Assistant itself names. Only the last one needs an answer from the app: the other three
@@ -561,7 +566,7 @@ struct Tile {
   // soon, and the view its full screen opens on.
   bool calendar_busy_free = false;
   uint8_t calendar_soon = 0;
-  std::string calendar_view;
+  tile_words::Word<tile_words::Views> calendar_view;
   bool calendar_room = false, calendar_monday = false, calendar_week_numbers = false;
   uint8_t calendar_hours_from = 0, calendar_hours_to = 0;
   // A sensor's meter (firmware 0.56.0, meter_card.h): its look, its own range and its colours; none on any other tile, so
@@ -618,7 +623,8 @@ struct Tile {
   bool is_key() const { return parent >= 0; }
   bool bar_tile() const { return parent == BAR_TILE; }
   // Direct control set on a wide card (firmware 0.2.19+); empty keeps the plain card.
-  std::string controls, device_class;
+  tile_words::Word<tile_words::Controls> controls;
+  std::string device_class;
   bool muted = false;
   // A text entity in mode password (docs/TEXT_ENTITY.md): its tile and its field show dots instead of its value.
   bool secret = false;

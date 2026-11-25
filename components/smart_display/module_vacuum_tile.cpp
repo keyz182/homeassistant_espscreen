@@ -395,7 +395,7 @@ static void replan(Widgets &w, const Tile &t, int width, int height) {
   v.data = t.extra().vacuum;
   vt::Input &in = v.input;
   in = vt::Input();
-  in.face = t.controls;
+  in.face = t.controls.c_str();
   in.width = width;
   in.height = height;
   if (d) {

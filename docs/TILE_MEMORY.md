@@ -61,7 +61,9 @@ What a tile costs comes from the tile catalogue, the one place every type is des
   section of a page (`section`, below).
 - On a board with PSRAM a tile costs its type's bytes plus what its choices add. On a board without PSRAM it also pays
   the tile itself and, where it keeps one, its block of extras, which live inside the chip there. Their sizes are the
-  firmware's (`sizeof(Tile)`, `sizeof(Extra)`), so the screen says them.
+  firmware's (`sizeof(Tile)`, `sizeof(Extra)`), so the screen says them. A tile's display, inline control, guard,
+  controls and calendar view are a byte each, a word of a fixed set (`tile_words.h`): a tile is 500 bytes on a 32-bit
+  chip, 120 fewer than when they were strings (measured with a 32-bit host build, 2026-11-25).
 
 A **section** (docs/PAGES.md "Sections", the boards of the full tier) costs 224 bytes inside the chip, on a screen that
 draws sections: its place in the page's list (`section_layout::Section`, 60 bytes on a 32-bit chip) and in the list of

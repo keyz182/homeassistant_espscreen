@@ -112,17 +112,18 @@ inline bool media_volume_selected(const Tile &t) {
 }
 // A select's "stepper" is a pair of chevron keys; numbers and climate get the -/+ pill.
 inline std::string panel_kind(const Tile &t) {
-  auto c = t.controls, d = t.domain();
+  const auto &c = t.controls;
+  const auto d = t.domain();
   if(d=="cover"){if(c=="tilt")return {};if(c=="buttons_tilt")return "buttons";if(c=="position_tilt")return "position";}
   if((d=="climate"||d=="humidifier")&&c=="setpoint_mode")return "setpoint";
   if(d=="media_player"&&c=="volume_playback")return "playback";
   // A light's presets (module light_presets): with the slider over them on a card with a second row, else the keys alone.
-  if(d=="light"&&c=="brightness_presets")return t.row_span()>1?c:"presets";
+  if(d=="light"&&c=="brightness_presets")return t.row_span()>1?c.c_str():"presets";
   // The small slider of a wide card is that domain's slider: the manager sends no control set beside it
   // (resolve_controls), so the kind comes from the domain.
   if (c.empty() && t.inline_control == "slider") return inline_kind(d);
   if (c == "stepper" && (d == "select" || d == "input_select")) return "chevrons";
-  return c;
+  return c.c_str();
 }
 // Home Assistant's colour for a climate mode (the card and its mode keys use it).
 inline uint32_t mode_color(const std::string &mode) {

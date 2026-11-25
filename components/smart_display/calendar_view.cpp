@@ -68,7 +68,7 @@ static cc::Options options(const Tile &t) {
   o.room = t.calendar_room;
   o.busy_free = t.calendar_busy_free || t.calendar_room;
   o.soon = t.calendar_soon;
-  o.start_view = t.calendar_view;
+  o.start_view = t.calendar_view.c_str();
   o.from_monday = t.calendar_monday;
   o.hours_from = t.calendar_hours_from;
   o.hours_to = t.calendar_hours_to;

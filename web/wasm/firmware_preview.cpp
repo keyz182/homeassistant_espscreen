@@ -233,7 +233,7 @@ const char *preview_layout() {
         card = static_cast<int>(cards.size());
         const auto &t = runtime_tiles::model.tiles[w.index];
         auto c = cards.add<JsonObject>();
-        c["object"] = id; c["entity"] = t.entity; c["display"] = t.display;
+        c["object"] = id; c["entity"] = t.entity; c["display"] = t.display.c_str();
         c["columns"] = t.column_span(); c["rows"] = t.row_span(); c["full"] = t.full; c["mode"] = w.extra_mode;
       }
     }
