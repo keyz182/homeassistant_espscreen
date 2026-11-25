@@ -1290,7 +1290,7 @@ std::string receive(const std::string &payload) {
     // (screen_manager/app/energy_flow.py): which sources it has, their power, the flows between them, the batteries'
     // charge, the sensor behind each source and the devices drawing power, biggest first.
     if (tile.is_energy() && extra["p"].is<JsonArray>()) {
-      auto e = std::make_shared<energy_card::Data>();
+      auto e = roomy::make<energy_card::Data>();
       const unsigned has = extra["h"].is<unsigned>() ? extra["h"].as<unsigned>() : 0;
       e->solar = has & 1; e->grid = has & 2; e->battery = has & 4;
       auto watts = [](JsonVariant list, unsigned i) { const float v = number(list[i], 0); return std::isfinite(v) ? std::max(0.f, v) : 0.f; };
@@ -1303,29 +1303,32 @@ std::string receive(const std::string &payload) {
       }
       e->soc = extra["c"].is<int>() ? std::clamp(extra["c"].as<int>(), 0, 100) : -1;
       if (extra["e"].is<JsonArray>()) {
-        e->solar_entity = string(extra["e"][0], 64); e->grid_entity = string(extra["e"][1], 64); e->battery_entity = string(extra["e"][2], 64);
-        for (auto *id : {&e->solar_entity, &e->grid_entity, &e->battery_entity}) if (!valid_entity(*id)) id->clear();
+        roomy::Text *ids[3] = {&e->solar_entity, &e->grid_entity, &e->battery_entity};
+        for (unsigned i = 0; i < 3; ++i) {
+          const std::string id = string(extra["e"][i], 64);
+          if (valid_entity(id)) *ids[i] = roomy::text(id);
+        }
       }
       if (extra["u"].is<JsonArray>()) {
-        const std::string *ids[3] = {&e->solar_entity, &e->grid_entity, &e->battery_entity};
+        const roomy::Text *ids[3] = {&e->solar_entity, &e->grid_entity, &e->battery_entity};
         for (unsigned i = 0; i < 3; ++i)
-          if (!ids[i]->empty()) e->readings.push_back({*ids[i], string(extra["u"][i][0], 32), string(extra["u"][i][1], 16)});
+          if (!ids[i]->empty()) e->readings.push_back({*ids[i], roomy::text(string(extra["u"][i][0], 32)), roomy::text(string(extra["u"][i][1], 16))});
       }
       if (extra["d"].is<JsonArray>()) for (JsonVariant dev : extra["d"].as<JsonArray>()) {
         if (e->devices.size() == 8) break;
         energy_card::Device d;
-        d.name = string(dev["n"], 48);
-        d.entity = string(dev["e"], 64);
-        if (!valid_entity(d.entity)) d.entity.clear();
+        d.name = roomy::text(string(dev["n"], 48));
+        const std::string entity = string(dev["e"], 64);
+        if (valid_entity(entity)) d.entity = roomy::text(entity);
         const uint32_t icon = tile_icon::codepoint(string(dev["i"], 8));
         d.icon = icon && has_icon_glyph(icon) ? icon : 0;
         d.w = std::max(0.f, number(dev["w"], 0));
         if (d.name.empty() || d.w <= 0) continue;
-        if (!d.entity.empty()) e->readings.push_back({d.entity, string(dev["s"], 32), string(dev["u"], 16)});
+        if (!d.entity.empty()) e->readings.push_back({d.entity, roomy::text(string(dev["s"], 32)), roomy::text(string(dev["u"], 16))});
         e->devices.push_back(std::move(d));
       }
       e->rest = std::max(0.f, number(extra["o"], 0));
-      e->home_name = string(extra["n"], 32);
+      e->home_name = roomy::text(string(extra["n"], 32));
       next.energy = std::move(e);
     }
     // A calendar card (firmware 0.56.0+, calendar_card.h): today, the calendars' colours and names, the events the app

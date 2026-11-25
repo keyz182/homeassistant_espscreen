@@ -246,12 +246,12 @@ struct Sensor { std::string entity, name, state, unit; };
 static bool reading(const ec::Data &data, const std::string &entity, Sensor &out) {
   if (entity.empty()) return false;
   const ec::Reading *found = nullptr;
-  for (auto &r : data.readings) if (r.entity == entity) found = &r;
+  for (auto &r : data.readings) if (roomy::same(r.entity, entity)) found = &r;
   if (!found) return false;
-  out.entity = entity; out.state = found->state; out.unit = found->unit;
-  out.name = entity == data.solar_entity ? rt::tr(rt::txt::energy_solar) : entity == data.grid_entity ? rt::tr(rt::txt::energy_grid)
-           : entity == data.battery_entity ? rt::tr(rt::txt::energy_battery) : entity;
-  for (auto &d : data.devices) if (d.entity == entity) out.name = d.name;
+  out.entity = entity; out.state = roomy::plain(found->state); out.unit = roomy::plain(found->unit);
+  out.name = roomy::same(entity, data.solar_entity) ? rt::tr(rt::txt::energy_solar) : roomy::same(entity, data.grid_entity) ? rt::tr(rt::txt::energy_grid)
+           : roomy::same(entity, data.battery_entity) ? rt::tr(rt::txt::energy_battery) : entity;
+  for (auto &d : data.devices) if (roomy::same(d.entity, entity)) out.name = roomy::plain(d.name);
   return true;
 }
 
@@ -291,7 +291,7 @@ void render(Widgets &w, const Tile &t, int width, int height) {
   words.untracked = rt::tr(rt::txt::energy_untracked);
   words.decimal = screen_text::decimal_mark(); words.percent = screen_text::percent_sign();
   // The house is named as Home Assistant names it in its live power view: the home's own name.
-  if (t.extra().energy && !t.extra().energy->home_name.empty()) words.home = t.extra().energy->home_name;
+  if (t.extra().energy && !t.extra().energy->home_name.empty()) words.home = roomy::plain(t.extra().energy->home_name);
   // The circles take the card's own colour (a card may have a background of its own); a card without one, the page's.
   view.ground = lv_obj_get_style_bg_opa(w.tile, LV_PART_MAIN) > LV_OPA_50 ? lv_obj_get_style_bg_color(w.tile, LV_PART_MAIN) : theme::color(theme::PAGE);
   const bool resized = view.width != width || view.height != height;

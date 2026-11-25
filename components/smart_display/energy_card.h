@@ -31,6 +31,7 @@
 #include <string>
 #include <vector>
 
+#include "roomy.h"
 #include "ui_scale.h"
 
 namespace energy_card {
@@ -38,14 +39,14 @@ constexpr float PI = 3.14159265358979f;
 
 // ---- What the add-on sends, in W.
 struct Device {
-  std::string name, entity;
+  roomy::Text name, entity;  // PSRAM first: a tile keeps these as long as its page (roomy.h)
   uint32_t icon = 0;
   float w = 0;
   bool rest = false;  // Other or Untracked consumption: grey, as Home Assistant's sankey paints them
 };
 // A sensor behind a circle as Home Assistant states it, for the history card a tap opens.
 struct Reading {
-  std::string entity, state, unit;
+  roomy::Text entity, state, unit;
 };
 struct Data {
   bool solar = false, grid = false, battery = false;
@@ -54,10 +55,10 @@ struct Data {
   float s2h = 0, s2g = 0, s2b = 0, g2h = 0, g2b = 0, b2h = 0, b2g = 0;
   int soc = -1;  // the batteries' charge, -1 without one
   // The sensor behind each source's circle, for a tap (empty where Home Assistant has several or none).
-  std::string solar_entity, grid_entity, battery_entity;
-  std::vector<Reading> readings;  // those sensors' and the devices' own state and unit
-  std::vector<Device> devices;  // drawing power now, in the order of Home Assistant's Energy settings
-  std::string home_name;        // the home's name in Home Assistant, for the house's circle
+  roomy::Text solar_entity, grid_entity, battery_entity;
+  roomy::List<Reading> readings;  // those sensors' and the devices' own state and unit
+  roomy::List<Device> devices;  // drawing power now, in the order of Home Assistant's Energy settings
+  roomy::Text home_name;        // the home's name in Home Assistant, for the house's circle
   float rest = 0;               // devices drawing power beyond the ones sent
   bool any() const { return solar || grid || battery; }
 };
@@ -407,7 +408,7 @@ inline Choice choose(const Data &data, const Measure &m, int w, int h, const Wor
   std::string shape = std::to_string(w) + 'x' + std::to_string(h) + char('0' + data.solar) + char('0' + data.grid) +
                       char('0' + data.battery) + char(data.soc >= 0 ? 's' : '-') + char(data.rest > 0 ? 'o' : '-') + char(tracks ? 'u' : '-') + words.decimal;
   for (auto *word : {&words.solar, &words.grid, &words.battery, &words.home, &words.other, &words.untracked}) shape += '\n' + *word;
-  for (auto &dv : data.devices) shape += '\n' + dv.name;
+  for (auto &dv : data.devices) shape.append(1, '\n').append(dv.name.data(), dv.name.size());
   // The room a fit gives its numbers: the widest of them in the value's face, at least "8.8 kW" (fit() below).
   auto room = [&](const Fit &x) {
     const Face f = x.steps().value;
@@ -421,7 +422,7 @@ inline Choice choose(const Data &data, const Measure &m, int w, int h, const Wor
     if (n <= 0) return out;
     if (total + (data.rest > 0 ? 1 : 0) <= n || total == 0) {
       out.assign(data.devices.begin(), data.devices.end());
-      if (data.rest > 0) out.push_back({words.other, "", ICON_OTHER, data.rest, true});
+      if (data.rest > 0) out.push_back({roomy::text(words.other), "", ICON_OTHER, data.rest, true});
       return out;
     }
     // The biggest keep a place, in the order they came (Home Assistant's): the smallest share the last as Other, at
@@ -433,7 +434,7 @@ inline Choice choose(const Data &data, const Measure &m, int w, int h, const Wor
     std::vector<int> kept(by_size.begin(), by_size.begin() + std::min(n - 1, total));
     std::sort(kept.begin(), kept.end());
     for (int i : kept) out.push_back(data.devices[i]);
-    Device other{words.other, "", ICON_OTHER, data.rest, true};
+    Device other{roomy::text(words.other), "", ICON_OTHER, data.rest, true};
     for (int k = n - 1; k < total; ++k) other.w += data.devices[by_size[k]].w;
     out.push_back(other);
     return out;
@@ -446,7 +447,7 @@ inline Choice choose(const Data &data, const Measure &m, int w, int h, const Wor
     const int own = int(data.devices.size()) + (data.rest > 0 ? 1 : 0);
     if (tracks && n >= 2 && (n >= 3 || own <= n - 1)) {
       out = devices_for(n - 1);
-      out.push_back({words.untracked, "", ICON_UNTRACKED, untracked, true});
+      out.push_back({roomy::text(words.untracked), "", ICON_UNTRACKED, untracked, true});
       return out;
     }
     return devices_for(n);
@@ -456,8 +457,8 @@ inline Choice choose(const Data &data, const Measure &m, int w, int h, const Wor
     if (cut || shown.empty() || x.mode.compact || !x.mode.labels) return true;
     const int nw = name_width(x, w);
     for (auto &dv : shown) {
-      if (m.width(x.steps().label, dv.name) <= nw) continue;
-      if (x.label_lines == 2 && !wrap2(dv.name, m, x.steps().label, nw).empty()) continue;
+      if (m.width(x.steps().label, roomy::plain(dv.name)) <= nw) continue;
+      if (x.label_lines == 2 && !wrap2(roomy::plain(dv.name), m, x.steps().label, nw).empty()) continue;
       return false;
     }
     return true;
@@ -718,11 +719,11 @@ inline Scene build(const Data &data, const Measure &m, int w, int h, const Words
   const std::string left = ft.mode.arrows ? utf8(ARROW_LEFT) : "", right = ft.mode.arrows ? utf8(ARROW_RIGHT) : "";
   const std::string down_a = ft.mode.arrows ? utf8(ARROW_DOWN) : "", up_a = ft.mode.arrows ? utf8(ARROW_UP) : "";
   if (data.solar) {
-    circle(solar, border, Paint::SOLAR, data.solar_entity);
+    circle(solar, border, Paint::SOLAR, roomy::plain(data.solar_entity));
     place(solar, utf8(ICON_SOLAR), Paint::INK, {{"", power(data.solar_w, words.decimal), Paint::INK}}, words.solar, !ft.vertical);
   }
   if (data.grid) {
-    circle(grid, border, grid_exports ? Paint::GRID_OUT : Paint::GRID_IN, data.grid_entity);
+    circle(grid, border, grid_exports ? Paint::GRID_OUT : Paint::GRID_IN, roomy::plain(data.grid_entity));
     std::vector<Value> rows;
     if (ft.mode.both || data.to_grid > 0) rows.push_back({left, power(data.to_grid, words.decimal), Paint::GRID_OUT});
     if (ft.mode.both || data.from_grid > 0 || data.to_grid <= 0) rows.push_back({right, power(data.from_grid, words.decimal), Paint::GRID_IN});
@@ -732,7 +733,7 @@ inline Scene build(const Data &data, const Measure &m, int w, int h, const Words
   }
   if (data.battery) {
     const bool charging = data.to_battery > data.from_battery;
-    circle(battery, border, charging ? Paint::BATTERY_IN : Paint::BATTERY_OUT, data.battery_entity);
+    circle(battery, border, charging ? Paint::BATTERY_IN : Paint::BATTERY_OUT, roomy::plain(data.battery_entity));
     std::vector<Value> rows;
     if (ft.mode.both || data.to_battery > 0) rows.push_back({down_a, power(data.to_battery, words.decimal), Paint::BATTERY_IN});
     if (ft.mode.both || data.from_battery > 0) rows.push_back({up_a, power(data.from_battery, words.decimal), Paint::BATTERY_OUT});
@@ -763,9 +764,9 @@ inline Scene build(const Data &data, const Measure &m, int w, int h, const Words
     place(home, utf8(ICON_HOME), Paint::INK, {{"", power(data.home, words.decimal), Paint::INK}}, dev.size() <= 1 ? words.home : "", false);
   }
   for (size_t i = 0; i < dev.size(); ++i) {
-    circle(slot[i], border, paint_of(i), dev[i].entity);
+    circle(slot[i], border, paint_of(i), roomy::plain(dev[i].entity));
     const bool top = !ft.vertical && (i == 0 || i == 2);
-    place(slot[i], utf8(dev[i].icon ? dev[i].icon : ICON_FLASH), paint_of(i), {{"", power(dev[i].w, words.decimal), Paint::INK}}, dev[i].name, top);
+    place(slot[i], utf8(dev[i].icon ? dev[i].icon : ICON_FLASH), paint_of(i), {{"", power(dev[i].w, words.decimal), Paint::INK}}, roomy::plain(dev[i].name), top);
   }
   return sc;
 }
