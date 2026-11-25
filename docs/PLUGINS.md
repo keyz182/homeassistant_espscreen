@@ -193,7 +193,10 @@ saved there. Every value kept before 0.12 is still valid.
   (`json_memory`), `tessera::Tile` and `tessera::Card` take PSRAM in their `operator new` (`tessera::InPsram`), and the
   API offers `tessera::Text` and `tessera::List` for what a plugin keeps. Keep it so: a new field a plugin tile keeps is a
   `roomy::Text` or `roomy::List`, a document the host builds or parses gets `json_memory`. Never what DMA or the network
-  reads (a panel's buffer, a socket's): those stay where their driver puts them.
+  reads (a panel's buffer, a socket's): those stay where their driver puts them. On a board without PSRAM (the CYD)
+  `roomy::Text` and `roomy::List` are `std::string` and `std::vector` themselves: the allocator would only fall back to
+  the same heap, and container types of their own cost the CYD about 2 KB of flash (2,080 bytes, ESPHome 2026.9.0).
+  `roomy.h` reads ESPHome's defines itself, so which one a board gets never depends on what a file included first.
 - **The manifest is the plugin's word, not a fence.** What the add-on enforces is `permissions.network` (every fetch)
   and `permissions.ha_commands` (every question through `tessera::send`). `home_assistant_actions` and
   `read_entities` are declarations the screen does not check: code built into the firmware can do what the firmware
