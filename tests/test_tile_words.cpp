@@ -40,6 +40,10 @@ int main() {
   guard = "open_only";
   assert(guard != "confirm" && guard != "lock_only" && !guard.empty());
 
+  // "auto" from an older app is a word of its own, read as the plain card by big_key() (clock_tile_lvgl.h).
+  controls = "auto";
+  assert(controls == "auto" && controls != "none" && !controls.empty());
+
   // Every word of a set comes back as itself.
   for (const char *w : Controls::words) {
     controls = w;

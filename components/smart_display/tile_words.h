@@ -66,10 +66,11 @@ struct Inlines {
 struct Guards {
   static constexpr const char *words[] = {"confirm", "", "lock_only"};
 };
-// A wide card's direct controls (catalogue `controls`); empty keeps the plain card. "none" is what an older app may send.
+// A wide card's direct controls (catalogue `controls`); empty keeps the plain card. "none" and "auto" are what an older
+// app may send, and big_key() (clock_tile_lvgl.h) reads both as the plain card.
 struct Controls {
   static constexpr const char *words[] = {
-      "",         "none",     "brightness", "brightness_presets", "buttons", "buttons_tilt", "map",
+      "",         "none",     "auto",       "brightness", "brightness_presets", "buttons", "buttons_tilt", "map",
       "map_rooms", "mode",    "playback",   "position",           "position_tilt", "presets", "rooms",
       "routines", "run",      "setpoint",   "setpoint_mode",      "slider",  "speed",        "stepper",
       "tilt",     "toggle",   "volume",     "volume_playback"};
