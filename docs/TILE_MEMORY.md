@@ -114,6 +114,12 @@ count about 80 bytes a tile less (3 KB on a full budget), which the reserve cove
 room is measured again, so the editor's bar follows what the screen really has. Every bench screen held a full budget
 for a quarter of an hour without a restart.
 
+Measured on a screen (2026-11-26): a 7 inch ESP32-S3 board with PSRAM, two pages and 15 tiles, the same YAML and
+plugins on 0.64.0 and with PSRAM first and the fixed-set words, read 13 minutes after boot on page 1. Internal RAM free
+rose from 37.3 to 44.3 KB, its lowest since boot from 18.8 to 27.7 KB, PSRAM free fell by 4 KB, and the room for tiles
+rose from 18 to 24 KB at the same price. Over 13 hours the level stayed flat. A live log over the API takes a few KB of
+internal RAM itself, so read these numbers from the sensors, not during a log session.
+
 ## When memory runs short anyway
 
 A layout past the room is saved and sent when someone chose to (above). Should the screen not have the room after all,

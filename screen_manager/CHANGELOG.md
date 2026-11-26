@@ -1,3 +1,9 @@
+## Unreleased
+
+- **More room for tiles on screens with PSRAM.** A tile's lists and longer texts, and the data of energy, calendar,
+  vacuum, preset and section cards, now go to PSRAM first, and five of a tile's settings take a byte instead of a text.
+  On a 7 inch screen this freed about 7 KB of internal RAM, and the room for its tiles rose from 18 to 24 KB.
+
 ## 0.4.104 (firmware 0.64.0)
 
 - **Save & send and Add tile work on a phone again.** With an AI connected for Layoutbot, a tap anywhere in the bar at the bottom of the phone editor opened Layoutbot's chat instead: an invisible part of its key lay over the whole bar. Each key in the bar is its own again. ([#471](https://github.com/MaxGramser/homeassistant_espscreen/issues/471), [#438](https://github.com/MaxGramser/homeassistant_espscreen/issues/438))
